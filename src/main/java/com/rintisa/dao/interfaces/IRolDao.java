@@ -14,4 +14,5 @@ public interface IRolDao extends IGenericDao<Rol, Long> {
     Optional<Rol> findByNombre(String nombre) throws DatabaseException;
     List<Rol> findByActivo(boolean activo) throws DatabaseException;
     boolean existsByNombre(String nombre) throws DatabaseException;
+     List<Rol> search(String criterio) throws DatabaseException;
 }
