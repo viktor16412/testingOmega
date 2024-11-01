@@ -13,6 +13,7 @@ import com.rintisa.model.Rol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -248,6 +249,59 @@ public class UsuarioDao implements IUsuarioDao {
             throw new DatabaseException("Error checking email existence: " + e.getMessage());
         }
     }
+    
+    
+    public void actualizarUltimoAcceso(Long userId, LocalDateTime fecha) throws DatabaseException {
+        String sql = "UPDATE usuarios SET ultimo_acceso = ? WHERE id = ?";
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setTimestamp(1, Timestamp.valueOf(fecha));
+            stmt.setLong(2, userId);
+            
+            int filasActualizadas = stmt.executeUpdate();
+            
+            if (filasActualizadas == 0) {
+                throw new DatabaseException("No se pudo actualizar el último acceso: usuario no encontrado");
+            }
+            
+            logger.debug("Último acceso actualizado para usuario ID: {}", userId);
+            
+        } catch (SQLException e) {
+            logger.error("Error al actualizar último acceso del usuario {}", userId, e);
+            throw new DatabaseException("Error al actualizar último acceso: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Obtiene la fecha del último acceso del usuario
+     */
+    public Optional<LocalDateTime> obtenerUltimoAcceso(Long userId) throws DatabaseException {
+        String sql = "SELECT ultimo_acceso FROM usuarios WHERE id = ?";
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, userId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Timestamp timestamp = rs.getTimestamp("ultimo_acceso");
+                    return Optional.ofNullable(timestamp != null ? timestamp.toLocalDateTime() : null);
+                }
+                return Optional.empty();
+            }
+            
+        } catch (SQLException e) {
+            logger.error("Error al obtener último acceso del usuario {}", userId, e);
+            throw new DatabaseException("Error al obtener último acceso: " + e.getMessage());
+        }
+    }
+    
+    
+    
+    
 
     private Usuario mapResultSetToUsuario(ResultSet rs) throws SQLException {
         Usuario usuario = new Usuario();

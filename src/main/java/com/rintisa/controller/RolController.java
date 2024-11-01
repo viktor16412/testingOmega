@@ -27,6 +27,141 @@ public class RolController {
         this.rolService = rolService;
     }
     
+    
+     public Rol crear(Rol rol) {
+        try {
+            validarRol(rol);
+            return rolService.crear(rol);
+        } catch (ValidationException | DatabaseException e) {
+            logger.error("Error al crear rol: {}", e.getMessage());
+            throw new RuntimeException("No se pudo crear el rol: " + e.getMessage(), e);
+        }
+    }
+    public void actualizar(Rol rol) {
+        try {
+            validarRol(rol);
+            rolService.actualizar(rol);
+        } catch (ValidationException | DatabaseException e) {
+            logger.error("Error al actualizar rol: {}", e.getMessage());
+            throw new RuntimeException("No se pudo actualizar el rol: " + e.getMessage(), e);
+        }
+    }
+    public void eliminar(Long id) {
+        try {
+            rolService.eliminar(id);
+        } catch (DatabaseException e) {
+            logger.error("Error al eliminar rol: {}", e.getMessage());
+            throw new RuntimeException("No se pudo eliminar el rol: " + e.getMessage(), e);
+        }
+    }
+    public Optional<Rol> buscarRol(Long id) {
+        try {
+            return rolService.buscarPorId(id);
+        } catch (DatabaseException e) {
+            logger.error("Error al buscar rol: {}", e.getMessage());
+            throw new RuntimeException("Error al buscar el rol: " + e.getMessage(), e);
+        }
+    }
+    public List<Rol> listarRoles() {
+        try {
+            return rolService.listarTodos();
+        } catch (DatabaseException e) {
+            logger.error("Error al listar roles: {}", e.getMessage());
+            throw new RuntimeException("Error al obtener la lista de roles: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Verifica si existe un rol con el mismo nombre
+     */
+    public boolean existeNombre(String nombre, Long idExcluir) {
+        try {
+            Optional<Rol> rolExistente = rolService.buscarPorNombre(nombre);
+            return rolExistente.isPresent() && 
+                   !rolExistente.get().getId().equals(idExcluir);
+        } catch (DatabaseException e) {
+            logger.error("Error al verificar nombre de rol: {}", e.getMessage());
+            throw new RuntimeException("Error al verificar el nombre del rol: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Busca roles que coincidan con el criterio
+     */
+    public List<Rol> buscar(String criterio) {
+        try {
+            return rolService.buscar(criterio);
+        } catch (DatabaseException e) {
+            logger.error("Error al buscar roles: {}", e.getMessage());
+            throw new RuntimeException("Error al buscar roles: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Valida los datos de un rol
+     */
+    private void validarRol(Rol rol) throws ValidationException {
+        ValidationException.Builder validationBuilder = 
+            new ValidationException.Builder("Error de validación");
+            
+        // Validar nombre
+        if (rol.getNombre() == null || rol.getNombre().trim().isEmpty()) {
+            validationBuilder.addError("nombre", "El nombre del rol es requerido");
+        } else if (rol.getNombre().length() < 3) {
+            validationBuilder.addError("nombre", 
+                "El nombre del rol debe tener al menos 3 caracteres");
+        } else if (rol.getNombre().length() > 50) {
+            validationBuilder.addError("nombre", 
+                "El nombre del rol no puede exceder los 50 caracteres");
+        }
+        
+        // Validar descripción
+        if (rol.getDescripcion() == null || rol.getDescripcion().trim().isEmpty()) {
+            validationBuilder.addError("descripcion", 
+                "La descripción del rol es requerida");
+        } else if (rol.getDescripcion().length() > 255) {
+            validationBuilder.addError("descripcion", 
+                "La descripción no puede exceder los 255 caracteres");
+        }
+        
+        // Lanzar excepción si hay errores
+        validationBuilder.throwIfHasErrors();
+    }
+    
+    /**
+     * Verifica si es el rol de administrador
+     */
+    public boolean esRolAdmin(Rol rol) {
+        return rol != null && "ADMIN".equals(rol.getNombre());
+    }
+    
+    /**
+     * Verifica si un rol puede ser eliminado
+     */
+    public boolean puedeSerEliminado(Long rolId) {
+        try {
+            Optional<Rol> rol = buscarRol(rolId);
+            if (!rol.isPresent()) {
+                return false;
+            }
+            
+            // No permitir eliminar el rol ADMIN
+            if (esRolAdmin(rol.get())) {
+                return false;
+            }
+            
+            // Aquí podrías agregar más validaciones
+            // Por ejemplo, verificar si hay usuarios usando este rol
+            
+            return true;
+        } catch (Exception e) {
+            logger.error("Error al verificar si el rol puede ser eliminado: {}", 
+                        e.getMessage());
+            return false;
+        }
+    }
+    
+    
     /**
      * Crea un nuevo rol
      */
@@ -92,20 +227,20 @@ public class RolController {
     }
 
 
-    public List<Rol> listarRoles() {
+    /*public List<Rol> listarRoles() {
     try {
         return rolService.listarTodos();
     } catch (DatabaseException e) {
         logger.error("Error al listar roles: {}", e.getMessage());
         return new ArrayList<>(); // Retorna lista vacía en lugar de lanzar excepción
     }
-}
+}*/
     
        
     /**
      * Busca un rol por ID
      */
-    public Optional<Rol> buscarRol(Long id) {
+   /* public Optional<Rol> buscarRol(Long id) {
         logger.debug("Buscando rol con ID: {}", id);
         try {
             return rolService.buscarPorId(id);
@@ -113,7 +248,7 @@ public class RolController {
             logger.error("Error al buscar rol {}: {}", id, e.getMessage());
             throw new RuntimeException("No se pudo obtener el rol", e);
         }
-    }
+    }*/
     
     /**
      * Busca roles por estado activo/inactivo
@@ -144,7 +279,7 @@ public class RolController {
     /**
      * Realiza una búsqueda de roles por criterio
      */
-    public List<Rol> buscar(String criterio) {
+ /*   public List<Rol> buscar(String criterio) {
         logger.debug("Buscando roles con criterio: {}", criterio);
         try {
             if (criterio == null || criterio.trim().isEmpty()) {
@@ -155,7 +290,7 @@ public class RolController {
             logger.error("Error al buscar roles con criterio {}: {}", criterio, e.getMessage());
             throw new RuntimeException("No se pudo realizar la búsqueda", e);
         }
-    }
+    }*/
  /**
      * Elimina un rol
      */
@@ -212,7 +347,7 @@ public class RolController {
     /**
      * Método de utilidad para verificar si un rol puede ser eliminado
      */
-    public boolean puedeSerEliminado(Long rolId) {
+    /*public boolean puedeSerEliminado(Long rolId) {
         try {
             // Verificar que el rol existe
             Optional<Rol> rol = rolService.buscarPorId(rolId);
@@ -228,7 +363,7 @@ public class RolController {
             logger.error("Error al verificar si el rol puede ser eliminado: {}", e.getMessage());
             return false;
         }
-    }
+    }*/
     
     /**
      * Sanitiza el nombre del rol
@@ -272,9 +407,9 @@ public class RolController {
     /**
      * Verifica si un rol es el rol de administrador
      */
-    public boolean esRolAdmin(Rol rol) {
+   /* public boolean esRolAdmin(Rol rol) {
         return rol != null && "ADMIN".equals(rol.getNombre());
-    }
+    }*/
     
     /**
      * Obtiene una lista de nombres de roles para mostrar en un combo box

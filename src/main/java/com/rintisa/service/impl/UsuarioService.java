@@ -145,20 +145,19 @@ public class UsuarioService implements IUsuarioService {
             Optional<Usuario> usuario = usuarioDao.findByUsername(username);
             
             if (!usuario.isPresent()) {
-                logger.info("Intento de autenticación fallido: usuario no encontrado - {}", username);
+                logger.warn("Intento de autenticación con usuario inexistente: {}", username);
                 return false;
             }
             
-            boolean autenticado = BCrypt.checkpw(password, usuario.get().getPassword());
-            
-            if (autenticado) {
-                logger.info("Usuario autenticado exitosamente: {}", username);
+            if (verificarPassword(password, usuario.get().getPassword())) {
+                // Actualizar último acceso al autenticar exitosamente
                 actualizarUltimoAcceso(usuario.get().getId());
-            } else {
-                logger.info("Intento de autenticación fallido: contraseña incorrecta - {}", username);
+                logger.info("Usuario autenticado exitosamente: {}", username);
+                return true;
             }
             
-            return autenticado;
+            logger.warn("Intento de autenticación fallido para usuario: {}", username);
+            return false;
             
         } catch (DatabaseException e) {
             logger.error("Error durante la autenticación: {}", e.getMessage());
@@ -223,26 +222,41 @@ public class UsuarioService implements IUsuarioService {
 
     @Override
     public void actualizarUltimoAcceso(Long userId) throws DatabaseException {
-        logger.debug("Actualizando último acceso para usuario ID: {}", userId);
-        
         try {
-            Optional<Usuario> usuarioOpt = usuarioDao.findById(userId);
-            if (!usuarioOpt.isPresent()) {
+            // Verificar que el usuario existe
+            Optional<Usuario> usuario = usuarioDao.findById(userId);
+            if (!usuario.isPresent()) {
                 logger.warn("Intento de actualizar último acceso de usuario inexistente: {}", userId);
-                return;
+                throw new DatabaseException("Usuario no encontrado");
             }
             
-            Usuario usuario = usuarioOpt.get();
-            usuario.setUltimoAcceso(LocalDateTime.now());
+            // Actualizar último acceso
+            LocalDateTime ahora = LocalDateTime.now();
+            usuarioDao.actualizarUltimoAcceso(userId, ahora);
             
-            usuarioDao.update(usuario);
-            logger.debug("Último acceso actualizado para usuario: {}", usuario.getUsername());
+            // Actualizar el objeto usuario si es el usuario actual
+            usuario.get().setUltimoAcceso(ahora);
+            
+            logger.debug("Último acceso actualizado para usuario: {}", usuario.get().getUsername());
             
         } catch (DatabaseException e) {
             logger.error("Error al actualizar último acceso: {}", e.getMessage());
             throw e;
         }
     }
+    
+    @Override
+    public Optional<LocalDateTime> obtenerUltimoAcceso(Long userId) throws DatabaseException {
+        try {
+            return usuarioDao.obtenerUltimoAcceso(userId);
+        } catch (DatabaseException e) {
+            logger.error("Error al obtener último acceso: {}", e.getMessage());
+            throw e;
+        }
+    }
+    
+    
+    
     
     // Métodos de utilidad privados
     
@@ -266,5 +280,9 @@ public class UsuarioService implements IUsuarioService {
         }
     }
     
+    private boolean verificarPassword(String passwordIngresada, String passwordAlmacenada) {
+        // Aquí deberías usar BCrypt o similar para verificar la contraseña
+        return BCrypt.checkpw(passwordIngresada, passwordAlmacenada);
+    }
     
 }

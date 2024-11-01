@@ -16,18 +16,28 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public class UsuarioController {
     
     private static final Logger logger = LoggerFactory.getLogger(UsuarioController.class);
     
     private final IUsuarioService usuarioService;
+    private final RolController rolController;
     private final IRolService rolService;
+    private Usuario usuarioActual;
+    
     
     // Constructor
-    public UsuarioController(IUsuarioService usuarioService, IRolService rolService) {
+    public UsuarioController(IUsuarioService usuarioService, IRolService rolService, RolController rolController) {
+        
         this.usuarioService = usuarioService;
         this.rolService = rolService;
+        this.rolController = rolController;
+    }
+      // Método getter para RolController
+    public RolController getRolController() {
+        return rolController;
     }
     
     /**
@@ -155,10 +165,61 @@ public class UsuarioController {
             throw new RuntimeException("No se pudo obtener el usuario", e);
         }
     }
+   
+    public void actualizarUltimoAcceso(Long userId) {
+        try {
+            usuarioService.actualizarUltimoAcceso(userId);
+        } catch (DatabaseException e) {
+            logger.error("Error al actualizar último acceso para usuario {}: {}", 
+                        userId, e.getMessage());
+            // No relanzamos la excepción ya que este error no debería interrumpir el flujo
+        }
+    }
     
-   /**
-     * Elimina un usuario
-     */
+    
+   public void setUsuarioActual(Usuario usuario) {
+    this.usuarioActual = usuario;
+    try {
+        // Actualizar último acceso
+        if (usuario != null) {
+            actualizarUltimoAcceso(usuario.getId());
+        }
+    } catch (Exception e) {
+        logger.warn("No se pudo actualizar el último acceso del usuario", e);
+        }
+    }
+ 
+   
+   
+   public Usuario getUsuarioActual() {
+    return usuarioActual;
+    }
+   
+   public boolean login(String username, String password) {
+    try {
+        if (autenticar(username, password)) {
+            Optional<Usuario> usuario = buscarPorUsername(username);
+            if (usuario.isPresent()) {
+                setUsuarioActual(usuario.get());
+                return true;
+            }
+        }
+        return false;
+    } catch (Exception e) {
+        logger.error("Error durante el login", e);
+        throw new RuntimeException("Error durante el login: " + e.getMessage());
+    }
+}
+
+/**
+ * Cierra la sesión del usuario actual
+ */
+public void logout() {
+    usuarioActual = null;
+}
+    
+    
+    
     public void eliminarUsuario(Long id) {
         try {
             usuarioService.eliminar(id);
