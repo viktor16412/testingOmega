@@ -12,6 +12,7 @@ import com.rintisa.exception.ValidationException;
 import com.rintisa.util.ValidationUtils;
 
 import org.mindrot.jbcrypt.BCrypt;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,25 +143,34 @@ public class UsuarioService implements IUsuarioService {
         logger.debug("Intentando autenticar usuario: {}", username);
         
         try {
-            Optional<Usuario> usuario = usuarioDao.findByUsername(username);
+            Optional<Usuario> usuarioOpt = usuarioDao.findByUsername(username);
             
-            if (!usuario.isPresent()) {
-                logger.warn("Intento de autenticación con usuario inexistente: {}", username);
+            if (!usuarioOpt.isPresent()) {
+                logger.warn("Usuario no encontrado: {}", username);
                 return false;
             }
             
-            if (verificarPassword(password, usuario.get().getPassword())) {
-                // Actualizar último acceso al autenticar exitosamente
-                actualizarUltimoAcceso(usuario.get().getId());
-                logger.info("Usuario autenticado exitosamente: {}", username);
-                return true;
+            Usuario usuario = usuarioOpt.get();
+            
+            if (!usuario.isActivo()) {
+                logger.warn("Intento de login con usuario inactivo: {}", username);
+                return false;
             }
             
-            logger.warn("Intento de autenticación fallido para usuario: {}", username);
-            return false;
+            // Verificar contraseña con BCrypt
+            boolean autenticado = BCrypt.checkpw(password, usuario.getPassword());
+            
+            if (autenticado) {
+                logger.info("Usuario autenticado exitosamente: {}", username);
+                actualizarUltimoAcceso(usuario.getId());
+            } else {
+                logger.warn("Contraseña incorrecta para usuario: {}", username);
+            }
+            
+            return autenticado;
             
         } catch (DatabaseException e) {
-            logger.error("Error durante la autenticación: {}", e.getMessage());
+            logger.error("Error durante la autenticación de usuario: {}", username, e);
             throw e;
         }
     }
@@ -283,6 +293,9 @@ public class UsuarioService implements IUsuarioService {
     private boolean verificarPassword(String passwordIngresada, String passwordAlmacenada) {
         // Aquí deberías usar BCrypt o similar para verificar la contraseña
         return BCrypt.checkpw(passwordIngresada, passwordAlmacenada);
+    }
+     public String hashPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt(12));
     }
     
 }

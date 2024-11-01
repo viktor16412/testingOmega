@@ -88,7 +88,7 @@ public class MainView extends JFrame {
         
         // Icono de la aplicación
         try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/images/icon.png"));
+            ImageIcon icon = new ImageIcon(getClass().getResource("/icons/logo.png"));
             setIconImage(icon.getImage());
         } catch (Exception e) {
             logger.warn("No se pudo cargar el icono de la aplicación");
@@ -110,11 +110,11 @@ public class MainView extends JFrame {
         menuArchivo.setMnemonic(KeyEvent.VK_A);
         
         JMenuItem menuCambiarPassword = new JMenuItem("Cambiar Contraseña", 
-            new ImageIcon(getClass().getResource("/images/key.png")));
+            new ImageIcon(getClass().getResource("/icons/key.png")));
         menuCambiarPassword.addActionListener(e -> mostrarDialogoCambiarPassword());
         
         JMenuItem menuSalir = new JMenuItem("Salir", 
-            new ImageIcon(getClass().getResource("/images/exit.png")));
+            new ImageIcon(getClass().getResource("/icons/cancel.png")));//falta iconos salir
         menuSalir.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 
             InputEvent.CTRL_DOWN_MASK));
         menuSalir.addActionListener(e -> confirmarSalida());
@@ -128,11 +128,11 @@ public class MainView extends JFrame {
         menuAdministracion.setMnemonic(KeyEvent.VK_D);
         
         JMenuItem menuUsuarios = new JMenuItem("Gestión de Usuarios", 
-            new ImageIcon(getClass().getResource("/images/users.png")));
+            new ImageIcon(getClass().getResource("/icons/user.png")));
         menuUsuarios.addActionListener(e -> mostrarGestionUsuarios());
         
         JMenuItem menuRoles = new JMenuItem("Gestión de Roles", 
-            new ImageIcon(getClass().getResource("/images/roles.png")));
+            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos roles
         menuRoles.addActionListener(e -> mostrarGestionRoles());
         
         menuAdministracion.add(menuUsuarios);
@@ -146,11 +146,11 @@ public class MainView extends JFrame {
         menuReportes.setMnemonic(KeyEvent.VK_R);
         
         JMenuItem menuReporteUsuarios = new JMenuItem("Reporte de Usuarios", 
-            new ImageIcon(getClass().getResource("/images/report-users.png")));
+            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte usuario
         JMenuItem menuReporteRoles = new JMenuItem("Reporte de Roles", 
-            new ImageIcon(getClass().getResource("/images/report-roles.png")));
+            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte roles
         JMenuItem menuReporteAccesos = new JMenuItem("Reporte de Accesos", 
-            new ImageIcon(getClass().getResource("/images/report-access.png")));
+            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte accesos
         
         menuReporteUsuarios.addActionListener(e -> generarReporteUsuarios());
         menuReporteRoles.addActionListener(e -> generarReporteRoles());
@@ -165,7 +165,7 @@ public class MainView extends JFrame {
         menuAyuda.setMnemonic(KeyEvent.VK_Y);
         
         JMenuItem menuAcercaDe = new JMenuItem("Acerca de...", 
-            new ImageIcon(getClass().getResource("/images/about.png")));
+            new ImageIcon(getClass().getResource("/icons/logo.png")));
         menuAcercaDe.addActionListener(e -> mostrarAcercaDe());
         
         menuAyuda.add(menuAcercaDe);
@@ -185,17 +185,17 @@ public class MainView extends JFrame {
         
         // Botones de la barra de herramientas
         JButton btnUsuarios = new JButton(new ImageIcon(
-            getClass().getResource("/images/users.png")));
+            getClass().getResource("/icons/user.png")));
         btnUsuarios.setToolTipText("Gestión de Usuarios");
         btnUsuarios.addActionListener(e -> mostrarGestionUsuarios());
         
         JButton btnRoles = new JButton(new ImageIcon(
-            getClass().getResource("/images/roles.png")));
+            getClass().getResource("/icons/user.png")));///////Buscar Cambio de Icono a Roles
         btnRoles.setToolTipText("Gestión de Roles");
         btnRoles.addActionListener(e -> mostrarGestionRoles());
         
         JButton btnReportes = new JButton(new ImageIcon(
-            getClass().getResource("/images/reports.png")));
+            getClass().getResource("/icons/user.png")));///////Buscar Cambio de Icono a Reportes
         btnReportes.setToolTipText("Reportes");
         btnReportes.addActionListener(e -> mostrarMenuReportes(btnReportes));
         
