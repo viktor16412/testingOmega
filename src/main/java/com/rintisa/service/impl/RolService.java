@@ -10,6 +10,7 @@ import com.rintisa.model.Rol;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.util.ValidationUtils;
+import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,12 +106,13 @@ public class RolService implements IRolService {
 
     @Override
     public List<Rol> listarTodos() throws DatabaseException {
-        logger.debug("Listando todos los roles");
+        
         try {
+            logger.debug("Listando todos los roles");
             return rolDao.findAll();
         } catch (DatabaseException e) {
             logger.error("Error al listar roles: {}", e.getMessage());
-            throw e;
+            return new ArrayList<>(); // Retorna lista vacía en caso de error
         }
     }
 

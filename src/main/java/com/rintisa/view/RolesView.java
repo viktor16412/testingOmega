@@ -186,7 +186,7 @@ public class RolesView extends JPanel {
         return panel;
     }
     
-private void configurarTabla() {
+    private void configurarTabla() {
         // Configurar propiedades de la tabla
         tablaRoles.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tablaRoles.getTableHeader().setReorderingAllowed(false);
@@ -319,7 +319,7 @@ private void configurarTabla() {
         modoEdicion = editando;
     }
     
-private void nuevoRol() {
+    private void nuevoRol() {
         limpiarCampos();
         rolIdEnEdicion = null;
         actualizarEstadoComponentes(true);

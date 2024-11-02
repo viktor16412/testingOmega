@@ -40,6 +40,15 @@ public class UsuarioController {
         return rolController;
     }
     
+    public IUsuarioService getUsuarioService() {
+        return usuarioService;
+    }
+    
+    public IRolService getRolService() {
+        return rolService;
+    }
+    
+    
     /**
      * Crea un nuevo usuario
      */
@@ -194,6 +203,8 @@ public class UsuarioController {
    public Usuario getUsuarioActual() {
     return usuarioActual;
     }
+    
+   
    
    public boolean login(String username, String password) {
     try {

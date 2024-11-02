@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -118,12 +119,13 @@ public class UsuarioService implements IUsuarioService {
 
     @Override
     public List<Usuario> listarTodos() throws DatabaseException {
-        logger.debug("Listando todos los usuarios");
+       
         try {
+            logger.debug("Listando todos los usuarios");
             return usuarioDao.findAll();
         } catch (DatabaseException e) {
             logger.error("Error al listar usuarios: {}", e.getMessage());
-            throw e;
+            return new ArrayList<>(); // Retorna lista vacía en caso de error
         }
     }
 
