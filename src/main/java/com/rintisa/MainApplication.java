@@ -14,6 +14,9 @@ import com.rintisa.config.DatabaseConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.rintisa.util.IconManager;
+import com.rintisa.view.UsuariosView;
+
+
 
 import javax.swing.*;
 import java.awt.*;
@@ -113,6 +116,11 @@ public class MainApplication {
             }
         });
     }
+    
+    
+    
+    
+    
 
     private static void showErrorDialog(String title, Exception e) {
         String message = String.format("%s%n%n%s", e.getMessage(), 

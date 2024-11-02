@@ -350,16 +350,35 @@ public class MainView extends JFrame {
 
     // Métodos para mostrar diferentes secciones
     private void mostrarGestionUsuarios() {
-        if (!usuarioController.esAdministrador(usuarioActual)) {
-            mostrarMensajeError("No tiene permisos para acceder a esta función");
-            return;
-        }
         try {
+            // Verificar si el usuario es administrador
+            if (!usuarioController.esAdministrador(usuarioActual)) {
+                JOptionPane.showMessageDialog(this,
+                    "No tiene permisos para acceder a esta función",
+                    "Acceso Denegado",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Limpiar panel de contenido
+            contentPanel.removeAll();
+
+            // Crear y agregar el panel de gestión de usuarios
             UsuariosView usuariosView = new UsuariosView(usuarioController);
-            cambiarPanel(usuariosView, "Gestión de Usuarios");
+            contentPanel.add(usuariosView, BorderLayout.CENTER);
+
+            // Actualizar la interfaz
+            contentPanel.revalidate();
+            contentPanel.repaint();
+            
+            logger.info("Panel de gestión de usuarios mostrado");
+            
         } catch (Exception e) {
             logger.error("Error al mostrar gestión de usuarios", e);
-            mostrarMensajeError("Error al cargar la gestión de usuarios: " + e.getMessage());
+            JOptionPane.showMessageDialog(this,
+                "Error al abrir la gestión de usuarios: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -482,12 +501,17 @@ public class MainView extends JFrame {
             System.exit(0);
         }
     }
+    
+    
+    
+    
+    
 
     private void mostrarAcercaDe() {
         JOptionPane.showMessageDialog(
             this,
             "Sistema RINTISA\nVersión 1.0\n\n" +
-            "Desarrollado por Tu Empresa\n" +
+            "Desarrollado por Grupo08@UTP\n" +
             "© 2024 Todos los derechos reservados",
             "Acerca de",
             JOptionPane.INFORMATION_MESSAGE
