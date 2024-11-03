@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.exception;
 
 import org.slf4j.Logger;
@@ -44,7 +40,7 @@ public class DatabaseException extends Exception {
     }
     
     /**
-     * Método utilitario para convertir SQLException en DatabaseException
+     * Método  para convertir SQLException en DatabaseException
      * con el código de error apropiado.
      */
     public static DatabaseException fromSQLException(SQLException ex) {

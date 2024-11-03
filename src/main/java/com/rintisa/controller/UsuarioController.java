@@ -1,22 +1,21 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.controller;
 
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
+import com.rintisa.model.RegistroAcceso;
+import com.rintisa.service.impl.UsuarioService;
 import com.rintisa.service.interfaces.IUsuarioService;
 import com.rintisa.service.interfaces.IRolService;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
-
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDateTime;
+import java.util.logging.Level;
 
 public class UsuarioController {
     
@@ -47,11 +46,8 @@ public class UsuarioController {
     public IRolService getRolService() {
         return rolService;
     }
-    
-    
-    /**
-     * Crea un nuevo usuario
-     */
+     
+    //Crea un nuevo usuario   
     public Usuario crearUsuario(String username, String password, String nombre, 
                               String apellido, String email, Long rolId) {
         try {
@@ -78,9 +74,7 @@ public class UsuarioController {
         }
     }
     
-    /**
-     * Actualiza un usuario existente
-     */
+    //Actualiza un usuario existente    
     public void actualizarUsuario(Long id, String nombre, String apellido, 
                                 String email, Long rolId, boolean activo) {
         try {
@@ -115,9 +109,8 @@ public class UsuarioController {
         }
     }
     
-    /**
-     * Obtiene todos los usuarios
-     */
+    
+    //Obtiene todos los usuarios     
     public List<Usuario> listarUsuarios() {
         try {
             return usuarioService.listarTodos();
@@ -127,9 +120,7 @@ public class UsuarioController {
         }
     }
     
-    /**
-     * Busca un usuario por ID
-     */
+    //Busca un usuario por ID
     public Optional<Usuario> buscarUsuario(Long id) {
         try {
             return usuarioService.buscarPorId(id);
@@ -139,9 +130,7 @@ public class UsuarioController {
         }
     }
     
-    /**
-     * Busca usuarios por estado activo/inactivo
-     */
+    //Busca usuarios por estado activo/inactivo     
     public List<Usuario> buscarPorEstado(boolean activo) {
         try {
             return usuarioService.buscarPorActivo(activo);
@@ -151,9 +140,7 @@ public class UsuarioController {
         }
     }
     
-    /**
-     * Verifica las credenciales de un usuario
-     */
+    //Verifica las credenciales de un usuario
     public boolean autenticar(String username, String password) {
         try {
             return usuarioService.autenticar(username, password);
@@ -163,9 +150,7 @@ public class UsuarioController {
         }
     }
     
-    /**
-     * Busca un usuario por nombre de usuario
-     */
+    //Busca un usuario por nombre de usuario
     public Optional<Usuario> buscarPorUsername(String username) {
         try {
             return usuarioService.buscarPorUsername(username);
@@ -181,7 +166,6 @@ public class UsuarioController {
         } catch (DatabaseException e) {
             logger.error("Error al actualizar último acceso para usuario {}: {}", 
                         userId, e.getMessage());
-            // No relanzamos la excepción ya que este error no debería interrumpir el flujo
         }
     }
     
@@ -207,30 +191,68 @@ public class UsuarioController {
    
    
    public boolean login(String username, String password) {
-    try {
-        if (autenticar(username, password)) {
-            Optional<Usuario> usuario = buscarPorUsername(username);
-            if (usuario.isPresent()) {
-                setUsuarioActual(usuario.get());
-                return true;
+     try {
+            String ipAddress = obtenerIpCliente();
+            
+            if (usuarioService.autenticar(username, password)) {
+                Optional<Usuario> usuario = usuarioService.buscarPorUsername(username);
+                if (usuario.isPresent()) {
+                    setUsuarioActual(usuario.get());
+                    // Registrar acceso exitoso
+                    usuarioService.registrarAcceso(
+                        usuario.get(),
+                        RegistroAcceso.TipoAcceso.LOGIN,
+                        ipAddress,
+                        "Login exitoso"
+                    );
+                    return true;
+                }
+            } else {
+                // Registrar intento fallido
+                usuarioService.buscarPorUsername(username).ifPresent(usuario -> {
+                    try {
+                        usuarioService.registrarAcceso(
+                                usuario,
+                                RegistroAcceso.TipoAcceso.FAILED_LOGIN,
+                                ipAddress,
+                                "Contraseña incorrecta"
+                        );
+                    } catch (DatabaseException ex) {
+                        java.util.logging.Logger.getLogger(UsuarioController.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                });
             }
+            return false;
+        } catch (Exception e) {
+            logger.error("Error durante el login", e);
+            throw new RuntimeException("Error durante el login: " + e.getMessage());
         }
-        return false;
-    } catch (Exception e) {
-        logger.error("Error durante el login", e);
-        throw new RuntimeException("Error durante el login: " + e.getMessage());
     }
-}
+   
+    private String obtenerIpCliente() {
+        // En una aplicación web, esto vendría de la request
+        // En una aplicación de escritorio, usamos la IP local
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception e) {
+            return "127.0.0.1";
+        }
+    }
+   
 
-/**
- * Cierra la sesión del usuario actual
- */
-public void logout() {
-    usuarioActual = null;
-}
-    
-    
-    
+    //Cierra la sesión del usuario actual
+     public void logout() throws DatabaseException {
+         if (usuarioActual != null) {
+             usuarioService.registrarAcceso(
+                     usuarioActual,
+                     RegistroAcceso.TipoAcceso.LOGOUT,
+                     obtenerIpCliente(),
+                     "Logout exitoso"
+             );
+         }
+         usuarioActual = null;
+    }
+        
     public void eliminarUsuario(Long id) {
         try {
             usuarioService.eliminar(id);
@@ -240,9 +262,7 @@ public void logout() {
         }
     }
     
-    /**
-     * Cambia la contraseña de un usuario
-     */
+    //Cambia la contraseña de un usuario
     public void cambiarPassword(Long userId, String oldPassword, String newPassword) {
         try {
             usuarioService.cambiarPassword(userId, oldPassword, newPassword);
@@ -252,21 +272,16 @@ public void logout() {
         }
     }
 
-    /**
-     * Actualiza el último acceso del usuario
-     */
+    //Actualiza el último acceso del usuario
     public void registrarAcceso(Long userId) {
         try {
             usuarioService.actualizarUltimoAcceso(userId);
         } catch (DatabaseException e) {
             logger.error("Error al registrar acceso del usuario {}: {}", userId, e.getMessage());
-            // No lanzamos la excepción ya que esto no debería interrumpir el flujo normal
         }
     }
 
-    /**
-     * Valida los datos de un usuario antes de crearlo o actualizarlo
-     */
+    //Valida los datos de un usuario antes de crearlo o actualizarlo
     private void validarDatosUsuario(String username, String password, String email) 
             throws ValidationException {
         ValidationException.Builder validationBuilder = 
@@ -280,7 +295,7 @@ public void logout() {
                 "El nombre de usuario debe tener entre 4 y 20 caracteres");
         }
 
-        // Validar password si está presente (puede ser null en actualizaciones)
+        // Validar password si está presente 
         if (password != null && !password.trim().isEmpty()) {
             if (password.length() < 8) {
                 validationBuilder.addError("password", 
@@ -298,39 +313,34 @@ public void logout() {
         validationBuilder.throwIfHasErrors();
     }
 
-    /**
-     * Método de utilidad para construir un mensaje de error
-     */
+    
+    //Método para construir un mensaje de error
     private String construirMensajeError(String operacion, String detalle) {
         return String.format("Error al %s usuario: %s", operacion, detalle);
     }
 
-    /**
-     * Método para manejar excepciones de base de datos
-     */
+    //Método para manejar excepciones de base de datos  
     private void manejarExcepcionBD(DatabaseException e, String operacion) {
         String mensaje = construirMensajeError(operacion, e.getMessage());
         logger.error(mensaje, e);
         throw new RuntimeException(mensaje, e);
     }
 
-    /**
-     * Método para manejar excepciones de validación
-     */
+    //Método para manejar excepciones de validación
     private void manejarExcepcionValidacion(ValidationException e, String operacion) {
         String mensaje = construirMensajeError(operacion, e.getMessage());
         logger.warn(mensaje);
         throw new RuntimeException(mensaje, e);
     }
 
-    /**
-     * Valida si un usuario tiene permisos de administrador
-     */
+    //Valida si un usuario tiene permisos de administrador    
     public boolean esAdministrador(Usuario usuario) {
         return usuario != null && 
                usuario.getRol() != null && 
                "ADMIN".equalsIgnoreCase(usuario.getRol().getNombre());
-    } 
+    }
+    
+    
     
     
     

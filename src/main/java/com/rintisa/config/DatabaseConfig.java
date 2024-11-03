@@ -1,8 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package com.rintisa.config;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
@@ -47,7 +45,7 @@ public class DatabaseConfig {
         // Configuración básica
         config.setJdbcUrl(properties.getProperty("db.url"));
         config.setUsername(properties.getProperty("db.username", "root"));
-        // No configuramos contraseña si está vacía
+        
         String password = properties.getProperty("db.password");
         if (password != null && !password.trim().isEmpty()) {
             config.setPassword(password);

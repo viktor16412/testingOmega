@@ -1,11 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package com.rintisa.view;
 
 import com.rintisa.controller.UsuarioController;
 import com.rintisa.controller.RolController;
+import com.rintisa.exception.DatabaseException;
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
 
@@ -21,6 +19,7 @@ import java.util.ArrayList;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,9 +59,6 @@ public class MainView extends JFrame {
         this.rolController = usuarioController.getRolController();
         this.usuarioService = usuarioController.getUsuarioService();
         this.rolService = usuarioController.getRolService();
-        
-        
-        
         
         if (this.usuarioActual == null) {
             throw new IllegalStateException("No hay usuario autenticado");
@@ -136,6 +132,16 @@ public class MainView extends JFrame {
             new ImageIcon(getClass().getResource("/icons/key.png")));
         menuCambiarPassword.addActionListener(e -> mostrarDialogoCambiarPassword());
         
+        JMenuItem menuCerrarSesion = new JMenuItem("Cerrar Sesión", 
+            new ImageIcon(getClass().getResource("/icons/key.png")));
+         menuCerrarSesion.addActionListener(e -> {
+            try {
+                cerrarSesion();
+            } catch (DatabaseException ex) {
+                java.util.logging.Logger.getLogger(MainView.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
+        
         JMenuItem menuSalir = new JMenuItem("Salir", 
             new ImageIcon(getClass().getResource("/icons/cancel.png")));//falta iconos salir
         menuSalir.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 
@@ -143,6 +149,8 @@ public class MainView extends JFrame {
         menuSalir.addActionListener(e -> confirmarSalida());
         
         menuArchivo.add(menuCambiarPassword);
+        menuArchivo.addSeparator();
+        menuArchivo.add(menuCerrarSesion);
         menuArchivo.addSeparator();
         menuArchivo.add(menuSalir);
         
@@ -296,7 +304,23 @@ public class MainView extends JFrame {
         );
     }
     
-    
+      private void cerrarSesion() throws DatabaseException {
+        int opcion = JOptionPane.showConfirmDialog(
+            this,
+            "¿Está seguro que desea cerrar sesión?",
+            "Cerrar Sesión",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (opcion == JOptionPane.YES_OPTION) {
+            dispose();
+            usuarioController.logout();
+            // Mostrar ventana de login
+            LoginView.mostrar(usuarioController);
+        }
+    }
+      
     private void configurarStatusBar() {
         // Mostrar información del usuario en la barra de estado
         actualizarStatusBar();
@@ -427,14 +451,16 @@ public class MainView extends JFrame {
 
     private void generarReporteAccesos() {
         try {
-            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            // Implementar generación de reporte
-            mostrarMensajeInfo("Reporte de accesos generado correctamente");
+            String rutaReporte = ReportGenerator.generarReporteAccesos(
+                usuarioController.getUsuarioService().obtenerRegistroAccesos()
+            );
+            ReportDialog.mostrarDialogoReporteGenerado(this, rutaReporte);
         } catch (Exception e) {
             logger.error("Error al generar reporte de accesos", e);
-            mostrarMensajeError("Error al generar reporte: " + e.getMessage());
-        } finally {
-            setCursor(Cursor.getDefaultCursor());
+            JOptionPane.showMessageDialog(this,
+                "Error al generar reporte: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 

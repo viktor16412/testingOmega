@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.service.impl;
 
 import com.rintisa.dao.interfaces.IRolDao;
@@ -136,10 +132,10 @@ public class RolService implements IRolService {
                 return listarTodos();
             }
             
-            // Sanitizar el criterio de búsqueda
+            
             String criterioProcesado = sanitizarCriterioBusqueda(criterio);
             
-            // Si después de sanitizar queda vacío, retornar todos
+            
             if (criterioProcesado.isEmpty()) {
                 logger.warn("Criterio de búsqueda inválido después de sanitizar: {}", criterio);
                 return listarTodos();
@@ -203,7 +199,7 @@ public class RolService implements IRolService {
         }
     }
     
-    // Métodos adicionales de utilidad
+    
     
     public boolean esNombreValido(String nombre) {
         return nombre != null && 
@@ -239,7 +235,7 @@ public class RolService implements IRolService {
     
     
     private void prepararRol(Rol rol) throws ValidationException {
-        // Sanitizar datos
+        
         rol.setNombre(sanitizarNombre(rol.getNombre()));
         rol.setDescripcion(sanitizarDescripcion(rol.getDescripcion()));
         

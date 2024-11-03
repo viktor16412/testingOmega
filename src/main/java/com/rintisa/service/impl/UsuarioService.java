@@ -1,15 +1,17 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.service.impl;
 
+import com.rintisa.config.DatabaseConfig;
 import com.rintisa.dao.interfaces.IUsuarioDao;
 import com.rintisa.service.interfaces.IUsuarioService;
 import com.rintisa.model.Usuario;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
+import com.rintisa.model.RegistroAcceso;
 import com.rintisa.util.ValidationUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -267,6 +269,80 @@ public class UsuarioService implements IUsuarioService {
         }
     }
     
+   @Override
+     public List<RegistroAcceso> obtenerRegistroAccesos() throws DatabaseException {
+        try {
+            String sql = "SELECT a.id, a.usuario_id, a.fecha_acceso, a.tipo_acceso, " +
+                        "a.ip_address, a.detalles, u.username, u.nombre, u.apellido " +
+                        "FROM accesos a " +
+                        "INNER JOIN usuarios u ON a.usuario_id = u.id " +
+                        "ORDER BY a.fecha_acceso DESC";
+            
+            List<RegistroAcceso> registros = new ArrayList<>();
+            
+            try (Connection conn = DatabaseConfig.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+                
+                while (rs.next()) {
+                    RegistroAcceso registro = new RegistroAcceso();
+                    registro.setId(rs.getLong("id"));
+                    registro.setFechaAcceso(rs.getTimestamp("fecha_acceso").toLocalDateTime());
+                    registro.setTipoAcceso(RegistroAcceso.TipoAcceso.valueOf(rs.getString("tipo_acceso")));
+                    registro.setIpAddress(rs.getString("ip_address"));
+                    registro.setDetalles(rs.getString("detalles"));
+                    
+                    // Crear usuario con datos básicos
+                    Usuario usuario = new Usuario();
+                    usuario.setId(rs.getLong("usuario_id"));
+                    usuario.setUsername(rs.getString("username"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    
+                    registro.setUsuario(usuario);
+                    registros.add(registro);
+                }
+            }
+            
+            return registros;
+            
+        } catch (SQLException e) {
+            logger.error("Error al obtener registro de accesos", e);
+            throw new DatabaseException("Error al obtener registro de accesos: " + e.getMessage());
+        }
+    }
+
+    // Método para registrar un nuevo acceso
+     @Override
+    public void registrarAcceso(Usuario usuario, 
+                              RegistroAcceso.TipoAcceso tipoAcceso, 
+                              String ipAddress, 
+                              String detalles) throws DatabaseException {
+        try {
+            String sql = "INSERT INTO accesos (usuario_id, tipo_acceso, ip_address, detalles) " +
+                        "VALUES (?, ?, ?, ?)";
+            
+            try (Connection conn = DatabaseConfig.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setLong(1, usuario.getId());
+                stmt.setString(2, tipoAcceso.name());
+                stmt.setString(3, ipAddress);
+                stmt.setString(4, detalles);
+                
+                stmt.executeUpdate();
+                
+                logger.info("Acceso registrado - Usuario: {}, Tipo: {}", 
+                          usuario.getUsername(), tipoAcceso);
+            }
+        } catch (SQLException e) {
+            logger.error("Error al registrar acceso", e);
+            throw new DatabaseException("Error al registrar acceso: " + e.getMessage());
+        }
+    }
+    
+    
+
     
     
     

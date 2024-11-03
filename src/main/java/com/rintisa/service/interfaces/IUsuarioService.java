@@ -1,10 +1,7 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
 package com.rintisa.service.interfaces;
 
 import com.rintisa.model.Usuario;
+import com.rintisa.model.RegistroAcceso;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import java.util.List;
@@ -33,4 +30,9 @@ public interface IUsuarioService {
     
     void actualizarUltimoAcceso(Long userId) throws DatabaseException;
     Optional<LocalDateTime> obtenerUltimoAcceso(Long userId) throws DatabaseException;
+    void registrarAcceso(Usuario usuario, 
+                        RegistroAcceso.TipoAcceso tipoAcceso, 
+                        String ipAddress, 
+                        String detalles) throws DatabaseException;
+    List<RegistroAcceso> obtenerRegistroAccesos() throws DatabaseException;
 }

@@ -450,8 +450,8 @@ public class UsuariosView extends JPanel {
     private JTextField txtBuscar;
     private JButton btnEditar;
     private JButton btnEliminar;
-    private JButton btnGuardar;
-    private JButton btnCancelar;
+    //private JButton btnGuardar;
+    //private JButton btnCancelar;
         
     public UsuariosView(UsuarioController usuarioController) {
         this.usuarioController = usuarioController;
@@ -480,21 +480,21 @@ public class UsuariosView extends JPanel {
         btnNuevo = new JButton("Nuevo");
         btnEditar = new JButton("Editar");
         btnEliminar = new JButton("Eliminar");
-        btnGuardar = new JButton("Guardar");
-        btnCancelar = new JButton("Cancelar");
+        //btnGuardar = new JButton("Guardar");
+        //btnCancelar = new JButton("Cancelar");
         
         // Configurar botones
         SwingUtils.configurarBoton(btnNuevo, "Crear nuevo usuario", "/images/new.png");
         SwingUtils.configurarBoton(btnEditar, "Editar usuario seleccionado", "/images/edit.png");
         SwingUtils.configurarBoton(btnEliminar, "Eliminar usuario seleccionado", "/images/delete.png");
-        SwingUtils.configurarBoton(btnGuardar, "Guardar cambios", "/images/save.png");
-        SwingUtils.configurarBoton(btnCancelar, "Cancelar operación", "/images/cancel.png");
+        //SwingUtils.configurarBoton(btnGuardar, "Guardar cambios", "/images/save.png");
+        //SwingUtils.configurarBoton(btnCancelar, "Cancelar operación", "/images/cancel.png");
         
         panelBotones.add(btnNuevo);
         panelBotones.add(btnEditar);
         panelBotones.add(btnEliminar);
-        panelBotones.add(btnGuardar);
-        panelBotones.add(btnCancelar);
+       // panelBotones.add(btnGuardar);
+       // panelBotones.add(btnCancelar);
         
         panelSuperior.add(panelBusqueda, BorderLayout.WEST);
         panelSuperior.add(panelBotones, BorderLayout.EAST);
@@ -760,8 +760,8 @@ public class UsuariosView extends JPanel {
     private void actualizarEstadoBotones(boolean haySeleccion) {
         btnEditar.setEnabled(haySeleccion);
         btnEliminar.setEnabled(haySeleccion);
-        btnGuardar.setEnabled(false);
-        btnCancelar.setEnabled(false);
+     //   btnGuardar.setEnabled(false);
+     //   btnCancelar.setEnabled(false);
     }
     
      private void mostrarError(String mensaje) {

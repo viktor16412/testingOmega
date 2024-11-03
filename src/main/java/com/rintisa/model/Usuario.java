@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.model;
 
 import java.time.LocalDateTime;
@@ -20,13 +16,11 @@ public class Usuario {
     private LocalDateTime ultimoAcceso;
     private Rol rol;
 
-    // Constructor
     public Usuario() {
         this.fechaCreacion = LocalDateTime.now();
         this.activo = true;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }

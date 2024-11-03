@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.util;
 
 import javax.swing.*;
@@ -37,11 +33,9 @@ public class IconManager {
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         
-        // Configurar antialiasing
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
                             RenderingHints.VALUE_ANTIALIAS_ON);
         
-        // Dibujar un icono por defecto simple
         g2d.setColor(new Color(200, 200, 200));
         g2d.fillOval(2, 2, size-4, size-4);
         g2d.setColor(new Color(150, 150, 150));
@@ -57,7 +51,7 @@ public class IconManager {
         return IconManager.class.getResourceAsStream(resourcePath) != null;
     }
     
-    // Método para listar los recursos disponibles (útil para debugging)
+    
     public static void listAvailableResources() {
         try {
             String[] resources = {

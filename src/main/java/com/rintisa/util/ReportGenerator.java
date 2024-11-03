@@ -1,13 +1,10 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rintisa.util;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
+import com.rintisa.model.RegistroAcceso;
 import java.awt.Desktop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,6 +138,67 @@ public class ReportGenerator {
             throw new RuntimeException("Error al generar reporte: " + e.getMessage());
         }
     }
+    
+    public static String generarReporteAccesos(List<RegistroAcceso> accesos) {
+    String fileName = generarNombreArchivo("Accesos");
+    try (Workbook workbook = new XSSFWorkbook()) {
+        Sheet sheet = workbook.createSheet("Accesos al Sistema");
+        
+        // Crear estilos
+        CellStyle headerStyle = crearEstiloEncabezado(workbook);
+        CellStyle dateStyle = crearEstiloFecha(workbook);
+        
+        // Crear encabezados
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {
+            "Usuario", 
+            "Fecha y Hora", 
+            "Tipo de Acceso", 
+            "IP", 
+            "Detalles"
+        };
+        
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+        
+        // Llenar datos
+        int rowNum = 1;
+        for (RegistroAcceso acceso : accesos) {
+            Row row = sheet.createRow(rowNum++);
+            
+            row.createCell(0).setCellValue(acceso.getUsuario().getUsername());
+            
+            Cell fechaCell = row.createCell(1);
+            fechaCell.setCellValue(acceso.getFechaAcceso());
+            fechaCell.setCellStyle(dateStyle);
+            
+            row.createCell(2).setCellValue(acceso.getTipoAcceso().toString());
+            row.createCell(3).setCellValue(acceso.getIpAddress());
+            row.createCell(4).setCellValue(acceso.getDetalles());
+        }
+        
+        // Autoajustar columnas
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+        
+        // Guardar archivo
+        String filePath = REPORTS_DIR + File.separator + fileName;
+        try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+            workbook.write(fileOut);
+        }
+        
+        logger.info("Reporte de accesos generado: {}", filePath);
+        return filePath;
+        
+    } catch (Exception e) {
+        logger.error("Error al generar reporte de accesos", e);
+        throw new RuntimeException("Error al generar reporte: " + e.getMessage());
+    }
+}
 
     private static String generarNombreArchivo(String tipo) {
         String timestamp = LocalDateTime.now().format(
