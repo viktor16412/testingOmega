@@ -1,14 +1,22 @@
 
 package com.rintisa.view;
 
+import com.rintisa.controller.RecepcionMercanciaController;
 import com.rintisa.controller.UsuarioController;
 import com.rintisa.controller.RolController;
+import com.rintisa.dao.impl.ProductoDao;
+import com.rintisa.dao.impl.RecepcionMercanciaDao;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
+import com.rintisa.service.impl.ProductoService;
+import com.rintisa.service.impl.RecepcionMercanciaService;
+
 
 import com.rintisa.service.interfaces.IUsuarioService;
 import com.rintisa.service.interfaces.IRolService;
+import com.rintisa.service.interfaces.IProductoService;
+import com.rintisa.service.interfaces.IRecepcionMercanciaService;
 
 import com.rintisa.util.SwingUtils;
 import com.rintisa.util.ReportGenerator;
@@ -29,13 +37,15 @@ public class MainView extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(MainView.class);
     
     // Controladores
-    private final UsuarioController usuarioController;
+    private final UsuarioController userController;
+    
     
     private final RolController rolController;
     private final IUsuarioService usuarioService;
     private final IRolService rolService;
-    
     private final Usuario usuarioActual;
+    private final IRecepcionMercanciaService recepcionService;
+    private final IProductoService productoService;
     
     // Componentes principales
     private JPanel mainPanel;
@@ -51,14 +61,37 @@ public class MainView extends JFrame {
     private JMenu menuAyuda;
     
     // Constructor
-    public MainView(UsuarioController usuarioController) {
-        this.usuarioController = usuarioController;
-        this.usuarioActual = usuarioController.getUsuarioActual();
+    public MainView(UsuarioController userController, 
+                   IProductoService productoService,
+                   IRecepcionMercanciaService recepcionService) {
         
-      
-        this.rolController = usuarioController.getRolController();
-        this.usuarioService = usuarioController.getUsuarioService();
-        this.rolService = usuarioController.getRolService();
+        logger.debug("Iniciando construcción de MainView");
+        
+        // Validar parámetros
+        if (userController == null) {
+            throw new IllegalArgumentException("usuarioController no puede ser null");
+        }
+        if (productoService == null) {
+            throw new IllegalArgumentException("productoService no puede ser null");
+        }
+        if (recepcionService == null) {
+            throw new IllegalArgumentException("recepcionService no puede ser null");
+        }
+        
+        this.userController  = userController ;
+        this.usuarioActual = userController.getUsuarioActual();
+        this.rolController = userController.getRolController();
+        this.usuarioService = userController.getUsuarioService();
+        this.rolService = userController.getRolService();
+        
+         // Inicializar DAOs
+        ProductoDao productoDao = new ProductoDao();
+        RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
+        
+        // Inicializar Servicios
+        this.productoService = new ProductoService(productoDao);
+        this.recepcionService = new RecepcionMercanciaService(recepcionDao);
+        
         
         if (this.usuarioActual == null) {
             throw new IllegalStateException("No hay usuario autenticado");
@@ -121,6 +154,8 @@ public class MainView extends JFrame {
             }
         });
     }
+    
+    
     private void configurarMenus() {
         menuBar = new JMenuBar();
         
@@ -169,8 +204,13 @@ public class MainView extends JFrame {
         menuAdministracion.add(menuUsuarios);
         menuAdministracion.add(menuRoles);
         
+         // Solo mostrar menú de administración si es admin
+        String rolUsuario = usuarioActual.getRol() != null ? usuarioActual.getRol().getNombre() : "";
+        menuAdministracion.setVisible("ADMIN".equals(rolUsuario));
+
+        
         // El menú de administración solo es visible para administradores
-        menuAdministracion.setVisible(usuarioController.esAdministrador(usuarioActual));
+        menuAdministracion.setVisible(userController.esAdministrador(usuarioActual));
         
         // Menú Reportes
         menuReportes = new JMenu("Reportes");
@@ -182,6 +222,28 @@ public class MainView extends JFrame {
             new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte roles
         JMenuItem menuReporteAccesos = new JMenuItem("Reporte de Accesos", 
             new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte accesos
+        
+        // Menú Almacén
+        JMenu menuAlmacen = new JMenu("Almacén");
+        menuAlmacen.setMnemonic(KeyEvent.VK_A);
+
+        JMenuItem menuRecepcion = new JMenuItem("Recepción de Mercancía",
+            new ImageIcon(getClass().getResource("/icons/user.png")));
+        JMenuItem menuInventario = new JMenuItem("Inventario",
+            new ImageIcon(getClass().getResource("/icons/user.png")));
+        
+        menuRecepcion.addActionListener(e -> mostrarRecepcionMercancia());
+     //   menuInventario.addActionListener(e -> mostrarInventario()); //falta implementar
+
+        menuAlmacen.add(menuRecepcion);
+        menuAlmacen.add(menuInventario);
+
+        // Solo mostrar menú de almacén si el usuario tiene el rol correspondiente
+        menuAlmacen.setVisible(tieneRolAlmacen(usuarioActual));
+
+        // Agregar el menú a la barra después de menuAdministracion
+            menuBar.add(menuAlmacen);
+           
         
         menuReporteUsuarios.addActionListener(e -> generarReporteUsuarios());
         menuReporteRoles.addActionListener(e -> generarReporteRoles());
@@ -236,8 +298,8 @@ public class MainView extends JFrame {
         toolBar.add(btnReportes);
         
         // Solo mostrar botones de administración si el usuario es administrador
-        btnUsuarios.setVisible(usuarioController.esAdministrador(usuarioActual));
-        btnRoles.setVisible(usuarioController.esAdministrador(usuarioActual));
+        btnUsuarios.setVisible(userController.esAdministrador(usuarioActual));
+        btnRoles.setVisible(userController.esAdministrador(usuarioActual));
         
         mainPanel.add(toolBar, BorderLayout.NORTH);
     }
@@ -279,7 +341,7 @@ public class MainView extends JFrame {
         );
         
         // Registrar Ctrl+U para gestión de usuarios (solo admin)
-        if (usuarioController.esAdministrador(usuarioActual)) {
+        if (userController.esAdministrador(usuarioActual)) {
             KeyStroke usuariosKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_U, 
                 InputEvent.CTRL_DOWN_MASK);
             getRootPane().registerKeyboardAction(
@@ -296,7 +358,7 @@ public class MainView extends JFrame {
             "Atajos de teclado:\n\n" +
             "F1 - Mostrar esta ayuda\n" +
             "Ctrl+Q - Salir del sistema\n" +
-            (usuarioController.esAdministrador(usuarioActual) ? 
+            (userController.esAdministrador(usuarioActual) ? 
              "Ctrl+U - Gestión de usuarios\n" : "") +
             "\nPara más información, consulte el manual del usuario.",
             "Ayuda",
@@ -304,7 +366,7 @@ public class MainView extends JFrame {
         );
     }
     
-      private void cerrarSesion() throws DatabaseException {
+     private void cerrarSesion() throws DatabaseException {
         int opcion = JOptionPane.showConfirmDialog(
             this,
             "¿Está seguro que desea cerrar sesión?",
@@ -315,9 +377,9 @@ public class MainView extends JFrame {
 
         if (opcion == JOptionPane.YES_OPTION) {
             dispose();
-            usuarioController.logout();
+            userController.logout();
             // Mostrar ventana de login
-            LoginView.mostrar(usuarioController);
+            LoginView.mostrar(userController);
         }
     }
       
@@ -376,7 +438,7 @@ public class MainView extends JFrame {
     private void mostrarGestionUsuarios() {
         try {
             // Verificar si el usuario es administrador
-            if (!usuarioController.esAdministrador(usuarioActual)) {
+            if (!userController.esAdministrador(usuarioActual)) {
                 JOptionPane.showMessageDialog(this,
                     "No tiene permisos para acceder a esta función",
                     "Acceso Denegado",
@@ -388,7 +450,7 @@ public class MainView extends JFrame {
             contentPanel.removeAll();
 
             // Crear y agregar el panel de gestión de usuarios
-            UsuariosView usuariosView = new UsuariosView(usuarioController);
+            UsuariosView usuariosView = new UsuariosView(userController);
             contentPanel.add(usuariosView, BorderLayout.CENTER);
 
             // Actualizar la interfaz
@@ -407,12 +469,12 @@ public class MainView extends JFrame {
     }
 
     private void mostrarGestionRoles() {
-        if (!usuarioController.esAdministrador(usuarioActual)) {
+        if (!userController.esAdministrador(usuarioActual)) {
             mostrarMensajeError("No tiene permisos para acceder a esta función");
             return;
         }
         try {
-            RolesView rolesView = new RolesView(usuarioController.getRolController());
+            RolesView rolesView = new RolesView(userController.getRolController());
             cambiarPanel(rolesView, "Gestión de Roles");
         } catch (Exception e) {
             logger.error("Error al mostrar gestión de roles", e);
@@ -452,7 +514,7 @@ public class MainView extends JFrame {
     private void generarReporteAccesos() {
         try {
             String rutaReporte = ReportGenerator.generarReporteAccesos(
-                usuarioController.getUsuarioService().obtenerRegistroAccesos()
+                userController.getUsuarioService().obtenerRegistroAccesos()
             );
             ReportDialog.mostrarDialogoReporteGenerado(this, rutaReporte);
         } catch (Exception e) {
@@ -500,7 +562,7 @@ public class MainView extends JFrame {
                     return;
                 }
 
-                usuarioController.cambiarPassword(
+                userController.cambiarPassword(
                     usuarioActual.getId(), oldPassStr, newPassStr
                 );
                 mostrarMensajeInfo("Contraseña cambiada exitosamente");
@@ -528,7 +590,48 @@ public class MainView extends JFrame {
         }
     }
     
-    
+    private boolean tieneRolAlmacen(Usuario usuario) {
+    return usuario != null && 
+           usuario.getRol() != null && 
+           "ALMACEN".equalsIgnoreCase(usuario.getRol().getNombre());
+}
+
+    private void mostrarRecepcionMercancia() {
+    if (!tieneRolAlmacen(usuarioActual)) {
+        JOptionPane.showMessageDialog(this,
+            "No tiene permisos para acceder a esta función",
+            "Acceso Denegado",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    try {
+        // Limpiar panel de contenido
+        contentPanel.removeAll();
+        
+        // Crear y agregar la vista de recepción
+        RecepcionMercanciaView recepcionView = new RecepcionMercanciaView(
+            new RecepcionMercanciaController(
+                recepcionService,
+                productoService,
+                userController
+            )
+        );
+        contentPanel.add(recepcionView, BorderLayout.CENTER);
+        
+        // Actualizar la interfaz
+        contentPanel.revalidate();
+        contentPanel.repaint();
+        
+        logger.info("Panel de recepción de mercancía mostrado");
+    } catch (Exception e) {
+        logger.error("Error al mostrar recepción de mercancía", e);
+        JOptionPane.showMessageDialog(this,
+            "Error al abrir la recepción de mercancía: " + e.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+    }
+}
     
     
     

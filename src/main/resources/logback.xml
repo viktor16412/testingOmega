@@ -1,33 +1,36 @@
-<!-- src/main/resources/logback.xml -->
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- Appender para consola -->
+
+    <!-- Enable status messages to the console for debugging -->
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+    <!-- Console appender configuration -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Appender para archivo -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/rintisa.log</file>
+    <!-- File appender configuration -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <!-- Absolute or relative path to log file -->
+        <file>./logs/rintisa.log</file>
+        <append>true</append>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/rintisa.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
     </appender>
 
-    <!-- Niveles de log para paquetes específicos -->
-    <logger name="com.rintisa" level="DEBUG"/>
-    <logger name="com.zaxxer.hikari" level="INFO"/>
-    <logger name="org.hibernate" level="WARN"/>
-    
-    <!-- Configuración raíz -->
+    <!-- Package-level logging configurations -->
+    <logger name="com.rintisa" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <!-- Root logger configuration -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
     </root>
+
 </configuration>

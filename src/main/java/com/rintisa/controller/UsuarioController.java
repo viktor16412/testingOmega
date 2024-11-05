@@ -2,6 +2,7 @@ package com.rintisa.controller;
 
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
+import com.rintisa.service.impl.RolService;
 import com.rintisa.model.RegistroAcceso;
 import com.rintisa.service.impl.UsuarioService;
 import com.rintisa.service.interfaces.IUsuarioService;
@@ -10,6 +11,7 @@ import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -338,6 +340,37 @@ public class UsuarioController {
         return usuario != null && 
                usuario.getRol() != null && 
                "ADMIN".equalsIgnoreCase(usuario.getRol().getNombre());
+    }
+    
+     /**
+     * Verifica si el usuario actual tiene un permiso específico
+     */
+    public boolean tienePermiso(String codigoPermiso) throws DatabaseException {
+        if (usuarioActual == null || usuarioActual.getRol() == null) {
+            return false;
+        }
+        return rolService.tienePermiso(usuarioActual.getRol().getId(), codigoPermiso);
+        
+    }
+
+    /**
+     * Verifica si el usuario actual tiene acceso al módulo de almacén
+     */
+    public boolean tieneAccesoAlmacen() throws DatabaseException {
+        if (usuarioActual == null || usuarioActual.getRol() == null) {
+            return false;
+        }
+        return rolService.tieneAccesoAlmacen(usuarioActual.getRol().getId());
+    }
+
+    /**
+     * Obtiene lista de permisos del usuario actual
+     */
+    public List<String> obtenerPermisosUsuario() throws DatabaseException {
+        if (usuarioActual == null || usuarioActual.getRol() == null) {
+            return new ArrayList<>();
+        }
+        return rolService.obtenerPermisos(usuarioActual.getRol().getId());
     }
     
     

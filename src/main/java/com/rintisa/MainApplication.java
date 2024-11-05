@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.rintisa.util.IconManager;
 import com.rintisa.view.UsuariosView;
+import com.rintisa.util.LogUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,11 +20,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.rintisa.config.LoggingInitializer;
+
 public class MainApplication {
     private static final Logger logger = LoggerFactory.getLogger(MainApplication.class);
 
     public static void main(String[] args) {
         try {
+            // Configurar el sistema de logging
+            System.setProperty("logback.configurationFile", "logback.xml");
+           
+            LogUtils.initializeLogging();
+            logger.info("Iniciando aplicación");
+            
+            // Inicializar logging
+            LoggingInitializer.initializeLogging();
+            LoggingInitializer.logSystemInfo();
             
             // Verificar recursos al inicio
             logger.info("Verificando recursos de la aplicación...");
@@ -84,12 +96,12 @@ public class MainApplication {
                 // Inicializar DAOs
                 RolDao rolDao = new RolDao();
                 UsuarioDao usuarioDao = new UsuarioDao();
-                logger.info("DAOs inicializados");
+                logger.debug("DAOs inicializados");
 
                 // Inicializar Servicios
                 RolService rolService = new RolService(rolDao);
                 UsuarioService usuarioService = new UsuarioService(usuarioDao);
-                logger.info("Servicios inicializados");
+                logger.debug("Servicios inicializados");
 
                 // Inicializar Controladores
                 RolController rolController = new RolController(rolService);
@@ -98,7 +110,7 @@ public class MainApplication {
                     rolService,
                     rolController
                 );
-                logger.info("Controladores inicializados");
+                logger.debug("Controladores inicializados");
 
                 // Mostrar ventana de login
                 LoginView.mostrar(usuarioController);

@@ -22,4 +22,26 @@ public interface IRolService {
     List<Rol> buscarPorActivo(boolean activo) throws DatabaseException;
     
     List<Rol> buscar(String criterio) throws DatabaseException;
+      // Nuevos métodos para permisos
+    boolean tienePermiso(Long rolId, String codigoPermiso) throws DatabaseException;
+    List<String> obtenerPermisos(Long rolId) throws DatabaseException;
+    boolean tieneAccesoAlmacen(Long rolId) throws DatabaseException;
+    
+    /**
+     * Asigna un permiso a un rol
+     */
+    void asignarPermiso(Long rolId, String codigoPermiso, Long usuarioId) 
+        throws DatabaseException, ValidationException;
+    
+    /**
+     * Revoca un permiso de un rol
+     */
+    void revocarPermiso(Long rolId, String codigoPermiso, Long usuarioId) 
+        throws DatabaseException, ValidationException;
+    
+    /**
+     * Verifica si un rol tiene un conjunto de permisos
+     */
+    boolean tienePermisos(Long rolId, List<String> codigosPermisos) throws DatabaseException;
+
 }

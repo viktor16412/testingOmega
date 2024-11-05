@@ -1,667 +1,21 @@
 
 package com.rintisa.view;
 
-import com.rintisa.controller.UsuarioController;
-import com.rintisa.util.SwingUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-/*import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-
-public class LoginView extends JFrame {
-    
-    private static final Logger logger = LoggerFactory.getLogger(LoginView.class);
-    
-    private final UsuarioController usuarioController;
-    
-    // Componentes de la interfaz
-    private JTextField txtUsuario;
-    private JPasswordField txtPassword;
-    private JButton btnIngresar;
-    private JButton btnCancelar;
-    private JLabel lblMensaje;
-    
-    // Constructor
-    public LoginView(UsuarioController usuarioController) {
-        this.usuarioController = usuarioController;
-        initComponents();
-        configurarVentana();
-        configurarEventos();
-    }
-    
-    private void initComponents() {
-        // Panel principal con padding
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        
-        // Panel de formulario
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        
-        // Título
-        JLabel lblTitulo = new JLabel("Iniciar Sesión");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        formPanel.add(lblTitulo, gbc);
-        
-        // Campo Usuario
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        formPanel.add(new JLabel("Usuario:"), gbc);
-        
-        gbc.gridx = 1;
-        txtUsuario = new JTextField(20);
-        formPanel.add(txtUsuario, gbc);
-        
-        // Campo Contraseña
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        formPanel.add(new JLabel("Contraseña:"), gbc);
-        
-        gbc.gridx = 1;
-        txtPassword = new JPasswordField(20);
-        formPanel.add(txtPassword, gbc);
-        
-        // Panel de botones
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        btnIngresar = new JButton("Ingresar");
-        btnCancelar = new JButton("Cancelar");
-        buttonPanel.add(btnIngresar);
-        buttonPanel.add(btnCancelar);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        formPanel.add(buttonPanel, gbc);
-        
-        // Label para mensajes
-        lblMensaje = new JLabel(" ");
-        lblMensaje.setForeground(Color.RED);
-        lblMensaje.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridy = 4;
-        formPanel.add(lblMensaje, gbc);
-        
-        mainPanel.add(formPanel, BorderLayout.CENTER);
-        setContentPane(mainPanel);
-    }
-    
-private void configurarVentana() {
-        setTitle("Sistema RINTISA - Login");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        pack();
-        setLocationRelativeTo(null); // Centrar en pantalla
-        
-        // Icono de la aplicación (si existe)
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/images/icon.png"));
-            setIconImage(icon.getImage());
-        } catch (Exception e) {
-            logger.warn("No se pudo cargar el icono de la aplicación");
-        }
-    }
-    
-    private void configurarEventos() {
-        // Evento del botón Ingresar
-        btnIngresar.addActionListener((ActionEvent e) -> {
-            intentarLogin();
-        });
-        
-        // Evento del botón Cancelar
-        btnCancelar.addActionListener((ActionEvent e) -> {
-            System.exit(0);
-        });
-        
-        // Manejar tecla Enter en el campo de usuario
-        txtUsuario.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    txtPassword.requestFocus();
-                }
-            }
-        });
-        
-        // Manejar tecla Enter en el campo de contraseña
-        txtPassword.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    intentarLogin();
-                }
-            }
-        });
-    }
-    
-    private void intentarLogin() {
-        String usuario = txtUsuario.getText().trim();
-        String password = new String(txtPassword.getPassword());
-        
-        // Validar campos vacíos
-        if (usuario.isEmpty() || password.isEmpty()) {
-            mostrarError("Por favor complete todos los campos");
-            return;
-        }
-        
-        // Deshabilitar controles durante la autenticación
-        setControlsEnabled(false);
-        lblMensaje.setText("Autenticando...");
-        lblMensaje.setForeground(Color.BLUE);
-        
-        // Usar SwingWorker para no bloquear la UI
-        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Boolean doInBackground() throws Exception {
-                return usuarioController.autenticar(usuario, password);
-            }
-            
-            @Override
-            protected void done() {
-                try {
-                    boolean loginExitoso = get();
-                    if (loginExitoso) {
-                        loginExitoso();
-                    } else {
-                        mostrarError("Usuario o contraseña incorrectos");
-                    }
-                } catch (Exception e) {
-                    logger.error("Error durante la autenticación", e);
-                    mostrarError("Error al intentar ingresar al sistema");
-                } finally {
-                    setControlsEnabled(true);
-                }
-            }
-        };
-        
-        worker.execute();
-    }
-    
-private void loginExitoso() {
-        logger.info("Login exitoso para usuario: {}", txtUsuario.getText());
-        
-        // Ocultar ventana de login
-        setVisible(false);
-        
-        // Mostrar ventana principal
-        SwingUtilities.invokeLater(() -> {
-            try {
-                MainView mainView = new MainView(usuarioController);
-                mainView.setVisible(true);
-                dispose(); // Cerrar ventana de login
-            } catch (Exception e) {
-                logger.error("Error al abrir ventana principal", e);
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Error al abrir la ventana principal: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-                System.exit(1);
-            }
-        });
-    }
-    
-    private void mostrarError(String mensaje) {
-        lblMensaje.setText(mensaje);
-        lblMensaje.setForeground(Color.RED);
-        // Efecto de shake en caso de error
-        realizarEfectoShake();
-    }
-    
-    private void realizarEfectoShake() {
-        final Point point = getLocation();
-        final int delay = 50;
-        final int distance = 10;
-        
-        Timer timer = new Timer(delay, null);
-        timer.addActionListener(new AbstractAction() {
-            private int numShakes = 0;
-            private boolean goingRight = true;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Point p = getLocation();
-                if (goingRight) {
-                    setLocation(p.x + distance, p.y);
-                } else {
-                    setLocation(p.x - distance, p.y);
-                }
-                goingRight = !goingRight;
-                
-                numShakes++;
-                if (numShakes == 4) {
-                    timer.stop();
-                    setLocation(point);
-                }
-            }
-        });
-        timer.start();
-    }
-    
-    private void setControlsEnabled(boolean enabled) {
-        txtUsuario.setEnabled(enabled);
-        txtPassword.setEnabled(enabled);
-        btnIngresar.setEnabled(enabled);
-        btnCancelar.setEnabled(enabled);
-        
-        if (enabled) {
-            // Si se habilitan los controles, dar foco al campo que esté vacío
-            if (txtUsuario.getText().trim().isEmpty()) {
-                txtUsuario.requestFocus();
-            } else if (txtPassword.getPassword().length == 0) {
-                txtPassword.requestFocus();
-            }
-        }
-    }
-    
-    // Método estático para mostrar la ventana de login
-    public static void mostrar(UsuarioController usuarioController) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                LoginView loginView = new LoginView(usuarioController);
-                loginView.setVisible(true);
-            } catch (Exception e) {
-                logger.error("Error al mostrar ventana de login", e);
-                JOptionPane.showMessageDialog(
-                    null,
-                    "Error al iniciar el sistema: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-                System.exit(1);
-            }
-        });
-    }
-    
-    // Método main para pruebas
-    public static void main(String[] args) {
-        // Aquí deberías inicializar tus servicios y controladores
-        UsuarioController usuarioController = null; // Inicializar apropiadamente
-        mostrar(usuarioController);
-    }
-}*/
-
-/*
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import com.rintisa.util.ResourceUtil;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.awt.event.*;
-
-public class LoginView extends JFrame {
-    
-    private static final Logger logger = LoggerFactory.getLogger(LoginView.class);
-    private static final long serialVersionUID = 1L;
-    
-    private final UsuarioController usuarioController;
-    
-    // Componentes de la interfaz
-    private JTextField txtUsuario;
-    private JPasswordField txtPassword;
-    private JButton btnIngresar;
-    private JButton btnCancelar;
-    private JLabel lblMensaje;
-    
-    // Constructor
-    public LoginView(UsuarioController usuarioController) {
-        this.usuarioController = usuarioController;
-        initComponents();
-        configurarVentana();
-        configurarEventos();
-    }
-    
-    private void initComponents() {
-         setLayout(new BorderLayout());
-        
-        // Panel principal con padding
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        
-        // Panel de formulario
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        
-         // Logo de la aplicación
-        JLabel lblLogo = new JLabel();
-        ImageIcon logo = ResourceUtil.getImageIcon("logo.png");
-        if (logo != null) {
-            lblLogo.setIcon(logo);
-        }
-        lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        formPanel.add(lblLogo, gbc);
-        
-        
-        // Título
-        JLabel lblTitulo = new JLabel("Iniciar Sesión");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        formPanel.add(lblTitulo, gbc);
-        
-        // Campo Usuario
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        formPanel.add(new JLabel("Usuario:"), gbc);
-        
-        /////Icono usuario
-        ImageIcon userIcon = ResourceUtil.getImageIcon("user.png");
-        if (userIcon != null) {
-            lblMensaje.setIcon(userIcon);
-        }
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        formPanel.add(lblMensaje, gbc);
-        
-        gbc.gridx = 1;
-        txtUsuario = new JTextField(20);
-        formPanel.add(txtUsuario, gbc);
-        
-        // Campo Contraseña
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        formPanel.add(new JLabel("Contraseña:"), gbc);
-        
-        gbc.gridx = 1;
-        txtPassword = new JPasswordField(20);
-        formPanel.add(txtPassword, gbc);
-        
-        // Checkbox de Mostrar Contraseña
-        JCheckBox mostrarContraseña = new JCheckBox("Mostrar contraseña");
-        mostrarContraseña.addActionListener(e -> {
-            if (mostrarContraseña.isSelected()) {
-                txtPassword.setEchoChar((char) 0);
-            } else {
-                txtPassword.setEchoChar('\u2022');
-            }
-        });
-        gbc.gridy = 3;
-        formPanel.add(mostrarContraseña, gbc);
-
-        // Panel de botones
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        btnIngresar = new JButton("Ingresar");
-        btnCancelar = new JButton("Cancelar");
-        buttonPanel.add(btnIngresar);
-        buttonPanel.add(btnCancelar);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.gridwidth = 2;
-        formPanel.add(buttonPanel, gbc);
-        
-        // Label para mensajes
-        lblMensaje = new JLabel(" ");
-        lblMensaje.setForeground(Color.RED);
-        lblMensaje.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridy = 5;
-        formPanel.add(lblMensaje, gbc);
-        
-        mainPanel.add(formPanel, BorderLayout.CENTER);
-        setContentPane(mainPanel);
-    }
-    
-    private void configurarVentana() {
-        setTitle("Sistema RINTISA - Login");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        pack();
-        setLocationRelativeTo(null); // Centrar en pantalla
-        
-        // Icono de la aplicación (si existe)
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/images/icon.png"));
-            setIconImage(icon.getImage());
-        } catch (Exception e) {
-            logger.warn("No se pudo cargar el icono de la aplicación");
-        }
-    }
-    
-    private void configurarEventos() {
-        // Evento del botón Ingresar
-        btnIngresar.addActionListener(e -> intentarLogin());
-        
-        // Evento del botón Cancelar
-        btnCancelar.addActionListener(e -> System.exit(0));
-        
-        // Manejar tecla Enter en el campo de usuario
-        txtUsuario.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    txtPassword.requestFocus();
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                String input = txtUsuario.getText();
-                if (!input.matches("[a-zA-Z0-9]*")) {
-                    mostrarError("El nombre de usuario solo debe contener letras y números");
-                    txtUsuario.setText(input.replaceAll("[^a-zA-Z0-9]", ""));
-                }
-            }
-        });
-        
-        // Manejar tecla Enter en el campo de contraseña
-        txtPassword.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    intentarLogin();
-                }
-            }
-        });
-    }
-    
-    private void intentarLogin() {
-        String usuario = txtUsuario.getText().trim();
-        String password = new String(txtPassword.getPassword());
-        
-        // Validar campos vacíos
-        if (usuario.isEmpty() || password.isEmpty()) {
-            mostrarError("Por favor complete todos los campos");
-            return;
-        }
-        
-        // Deshabilitar controles durante la autenticación
-        setControlsEnabled(false);
-        lblMensaje.setText("Autenticando...");
-        lblMensaje.setForeground(Color.BLUE);
-        
-        // Usar SwingWorker para no bloquear la UI
-        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Boolean doInBackground() throws Exception {
-                logger.debug("Intentando autenticar usuario: {}", usuario);
-                return usuarioController.login(usuario, password);
-            }
-            
-            @Override
-            protected void done() {
-                try {
-                    boolean loginExitoso = get();
-                    if (loginExitoso) {
-                        logger.info("Login exitoso para usuario: {}", usuario);
-                        loginExitoso();
-                    } else {
-                        logger.warn("Login fallido para usuario: {}", usuario);
-                        mostrarError("Usuario o contraseña incorrectos");
-                        txtPassword.setText("");
-                        txtPassword.requestFocus();
-                    }
-                } catch (Exception e) {
-                    logger.error("Error durante el login", e);
-                    mostrarError("Error al intentar ingresar: " + e.getMessage());
-                } finally {
-                    setControlsEnabled(true);
-                }
-            }
-        };
-        
-        worker.execute();
-    }
-    
-    
-    private void loginExitoso() {
-        logger.info("Login exitoso para usuario: {}", txtUsuario.getText());
-        
-        // Ocultar ventana de login
-        setVisible(false);
-        
-        // Mostrar ventana principal
-        SwingUtilities.invokeLater(() -> {
-            try {
-                MainView mainView = new MainView(usuarioController);
-                mainView.setVisible(true);
-                dispose(); // Cerrar ventana de login
-            } catch (Exception e) {
-                logger.error("Error al abrir ventana principal", e);
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Error al abrir la ventana principal: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-                System.exit(1);
-            }
-        });
-    }
-    
-    private void mostrarError(String mensaje) {
-        lblMensaje.setText(mensaje);
-        lblMensaje.setForeground(Color.RED);
-        logger.warn("Error de login: {}", mensaje);
-        
-        // Efecto de shake para feedback visual
-        realizarEfectoShake();
-    }
-    
-    private void realizarEfectoShake() {
-        final Point point = getLocation();
-        final int delay = 50;
-        final int distance = 10;
-        
-        Timer timer = new Timer(delay, null);
-        timer.addActionListener(new AbstractAction() {
-            private int numShakes = 0;
-            private boolean goingRight = true;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Point p = getLocation();
-                setLocation(p.x + (goingRight ? distance : -distance), p.y);
-                goingRight = !goingRight;
-                numShakes++;
-                if (numShakes == 4) {
-                    timer.stop();
-                    setLocation(point);
-                }
-            }
-        });
-        timer.start();
-    }
-    
-    private void setControlsEnabled(boolean enabled) {
-        txtUsuario.setEnabled(enabled);
-        txtPassword.setEnabled(enabled);
-        btnIngresar.setEnabled(enabled);
-        btnCancelar.setEnabled(enabled);
-        
-        if (enabled) {
-            if (txtUsuario.getText().trim().isEmpty()) {
-                txtUsuario.requestFocus();
-            } else if (txtPassword.getPassword().length == 0) {
-                txtPassword.requestFocus();
-            }
-        }
-    }
-    
-    // Clase interna para manejar autenticación en segundo plano
-    private class AutenticacionWorker extends SwingWorker<Boolean, Void> {
-        private final String usuario;
-        private final String password;
-
-        public AutenticacionWorker(String usuario, String password) {
-            this.usuario = usuario;
-            this.password = password;
-        }
-
-        @Override
-        protected Boolean doInBackground() throws Exception {
-            return usuarioController.autenticar(usuario, password);
-        }
-
-        @Override
-        protected void done() {
-            try {
-                boolean loginExitoso = get();
-                if (loginExitoso) {
-                    loginExitoso();
-                } else {
-                    mostrarError("Usuario o contraseña incorrectos");
-                }
-            } catch (Exception e) {
-                logger.error("Error durante la autenticación", e);
-                mostrarError("Error al intentar ingresar al sistema");
-            } finally {
-                setControlsEnabled(true);
-            }
-        }
-    }
-    
-    // Método estático para mostrar la ventana de login
-    public static void mostrar(UsuarioController usuarioController) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                LoginView loginView = new LoginView(usuarioController);
-                loginView.setVisible(true);
-            } catch (Exception e) {
-                logger.error("Error al mostrar ventana de login", e);
-                JOptionPane.showMessageDialog(
-                    null,
-                    "Error al iniciar el sistema: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-                System.exit(1);
-            }
-        });
-    }
-}
-*/
-
-
 ///////////VERISON CON ICONOS FUNCIONA//////////////////////////
+import com.rintisa.config.DatabaseConfig;
 import com.rintisa.controller.UsuarioController;
+import com.rintisa.dao.impl.ProductoDao;
+import com.rintisa.dao.impl.RecepcionMercanciaDao;
+import com.rintisa.dao.impl.RolDao;
+import com.rintisa.dao.impl.UsuarioDao;
+import com.rintisa.exception.DatabaseException;
+import com.rintisa.model.Usuario;
+import com.rintisa.service.impl.ProductoService;
+import com.rintisa.service.impl.RecepcionMercanciaService;
+import com.rintisa.service.impl.RolService;
+import com.rintisa.service.impl.UsuarioService;
 import com.rintisa.util.IconManager;
+import com.rintisa.util.LogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -675,15 +29,36 @@ public class LoginView extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(LoginView.class);
     private static final long serialVersionUID = 1L;
     
-    private final UsuarioController usuarioController;
+    private final UsuarioController userController;
     private JTextField txtUsuario;
     private JPasswordField txtPassword;
     private JButton btnIngresar;
     private JButton btnCancelar;
     private JLabel lblMensaje;
 
-    public LoginView(UsuarioController usuarioController) {
-        this.usuarioController = usuarioController;
+    public LoginView(UsuarioController controlador) {
+        //this.userController  = controlador;
+         try {
+            logger.debug("Iniciando LoginView");
+            
+            if (controlador == null) {
+                throw new IllegalArgumentException("El controlador no puede ser null");
+            }
+            this.userController = controlador;
+            
+            logger.debug("Inicializando componentes");
+            initComponents();
+            logger.debug("Configurando ventana");
+            configurarVentana();
+            logger.debug("Configurando eventos");
+            configurarEventos();
+            
+            logger.info("LoginView inicializado correctamente");
+            
+        } catch (Exception e) {
+            LogUtils.logError("Error al inicializar LoginView", e);
+            throw new RuntimeException("Error al inicializar LoginView", e);
+        }
         initComponents();
         configurarEventos();
         configurarVentana();
@@ -776,7 +151,7 @@ public class LoginView extends JFrame {
         setLocationRelativeTo(null);
     }
     
-private void configurarEventos() {
+    private void configurarEventos() {
         // Evento del botón Ingresar
         btnIngresar.addActionListener(e -> intentarLogin());
         
@@ -814,28 +189,36 @@ private void configurarEventos() {
     }
     
     private void intentarLogin() {
-        String usuario = txtUsuario.getText().trim();
+    String usuario = txtUsuario.getText().trim();
         String password = new String(txtPassword.getPassword());
-        
-        // Validar campos vacíos
+
+        logger.debug("Intento de login para usuario: {}", usuario);
+
         if (usuario.isEmpty() || password.isEmpty()) {
+            logger.warn("Intento de login con campos vacíos");
             mostrarError("Por favor complete todos los campos");
             return;
         }
-        
-        // Deshabilitar controles durante la autenticación
+
         setControlsEnabled(false);
         lblMensaje.setText("Autenticando...");
         lblMensaje.setForeground(Color.BLUE);
-        
-        // Usar SwingWorker para no bloquear la UI
+
         SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+            private String mensajeError = null;
+
             @Override
             protected Boolean doInBackground() throws Exception {
-                logger.debug("Intentando autenticar usuario: {}", usuario);
-                return usuarioController.login(usuario, password);
+                try {
+                    logger.debug("Iniciando autenticación para usuario: {}", usuario);
+                    return userController.login(usuario, password);
+                } catch (Exception e) {
+                    LogUtils.logError("Error en autenticación", e);
+                    mensajeError = e.getMessage();
+                    return false;
+                }
             }
-            
+
             @Override
             protected void done() {
                 try {
@@ -845,24 +228,127 @@ private void configurarEventos() {
                         loginExitoso();
                     } else {
                         logger.warn("Login fallido para usuario: {}", usuario);
-                        mostrarError("Usuario o contraseña incorrectos");
+                        String mensaje = mensajeError != null ? 
+                            mensajeError : "Usuario o contraseña incorrectos";
+                        mostrarError(mensaje);
                         txtPassword.setText("");
                         txtPassword.requestFocus();
                     }
                 } catch (Exception e) {
-                    logger.error("Error durante el login", e);
-                    mostrarError("Error al intentar ingresar: " + e.getMessage());
+                    LogUtils.logError("Error en proceso de login", e);
+                    mostrarError("Error en proceso de login: " + e.getMessage());
                 } finally {
                     setControlsEnabled(true);
                 }
             }
         };
-        
+
         worker.execute();
     }
     
-    
     private void loginExitoso() {
+           logger.info("Login exitoso para usuario: {}", txtUsuario.getText());
+    try {
+        Usuario usuarioActual = userController.getUsuarioActual();
+        if (usuarioActual == null) {
+            throw new IllegalStateException("Usuario no encontrado después del login");
+        }
+        logger.debug("Usuario actual: {}, Rol: {}", 
+            usuarioActual.getUsername(), 
+            usuarioActual.getRol() != null ? usuarioActual.getRol().getNombre() : "Sin rol");
+
+        // Ocultar ventana de login
+        setVisible(false);
+
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // Inicializar DAOs
+                ProductoDao productoDao = new ProductoDao();
+                RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
+                
+                // Inicializar Servicios
+                ProductoService productoService = new ProductoService(productoDao);
+                RecepcionMercanciaService recepcionService = 
+                    new RecepcionMercanciaService(recepcionDao, productoDao);
+
+                // Crear y mostrar ventana principal
+                MainView mainView = new MainView(
+                    userController,
+                    productoService,
+                    recepcionService
+                );
+
+                mainView.setVisible(true);
+                dispose();
+                
+            } catch (Exception e) {
+                logger.error("Error al crear MainView", e);
+                JOptionPane.showMessageDialog(
+                    LoginView.this,
+                    "Error al iniciar la aplicación:\n" + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                setVisible(true);
+                txtPassword.setText("");
+                txtUsuario.requestFocus();
+            }
+        });
+    } catch (Exception e) {
+        logger.error("Error en loginExitoso", e);
+        JOptionPane.showMessageDialog(
+            this,
+            "Error al iniciar sesión:\n" + e.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+        setVisible(true);
+        txtPassword.setText("");
+        txtUsuario.requestFocus();
+    }
+}
+
+    // Método auxiliar para crear servicios
+    private void inicializarServicios() throws DatabaseException {
+    try {
+        // Verificar conexión a base de datos
+        if (!DatabaseConfig.testConnection()) {
+            throw new DatabaseException("No se pudo establecer conexión con la base de datos");
+        }
+
+        // Aquí puedes inicializar otros servicios necesarios
+        logger.info("Servicios inicializados correctamente");
+        
+    } catch (Exception e) {
+        logger.error("Error al inicializar servicios", e);
+        throw new DatabaseException("Error al inicializar servicios: " + e.getMessage());
+    }
+}
+
+
+
+
+
+    // Método estático para mostrar la ventana de login
+    public static void mostrar(UsuarioController controlador) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                LoginView loginView = new LoginView(controlador);
+                loginView.setVisible(true);
+            } catch (Exception e) {
+                logger.error("Error al mostrar ventana de login", e);
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Error al iniciar el sistema: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                System.exit(1);
+            }
+        });
+    }
+  /*  private void loginExitoso() {
         logger.info("Login exitoso para usuario: {}", txtUsuario.getText());
         
         // Ocultar ventana de login
@@ -885,15 +371,20 @@ private void configurarEventos() {
                 System.exit(1);
             }
         });
-    }
+    }*/
     
     private void mostrarError(String mensaje) {
         lblMensaje.setText(mensaje);
         lblMensaje.setForeground(Color.RED);
-        logger.warn("Error de login: {}", mensaje);
-        
-        // Efecto de shake para feedback visual
         realizarEfectoShake();
+        logger.warn("Error de login: {}", mensaje);
+
+        // Reproducir sonido de error si está disponible
+        try {
+            Toolkit.getDefaultToolkit().beep();
+        } catch (Exception e) {
+        logger.debug("No se pudo reproducir sonido de error", e);
+        }
     }
     
     private void realizarEfectoShake() {
@@ -934,7 +425,9 @@ private void configurarEventos() {
                 txtPassword.requestFocus();
             }
         }
-    }
+     setCursor(enabled ? Cursor.getDefaultCursor() : Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        }    
+    
     
     // Clase interna para manejar autenticación en segundo plano
     private class AutenticacionWorker extends SwingWorker<Boolean, Void> {
@@ -948,7 +441,7 @@ private void configurarEventos() {
 
         @Override
         protected Boolean doInBackground() throws Exception {
-            return usuarioController.autenticar(usuario, password);
+            return userController.autenticar(usuario, password);
         }
 
         @Override
@@ -969,12 +462,12 @@ private void configurarEventos() {
         }
     }
     
-    // Método estático para mostrar la ventana de login
-    public static void mostrar(UsuarioController usuarioController) {
+    
+    /*public static void mostrar(UsuarioController userController) {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                LoginView loginView = new LoginView(usuarioController);
+                LoginView loginView = new LoginView(userController);
                 loginView.setVisible(true);
             } catch (Exception e) {
                 logger.error("Error al mostrar ventana de login", e);
@@ -987,7 +480,7 @@ private void configurarEventos() {
                 System.exit(1);
             }
         });
-    }
+    }*/
 }
 ///////////VERISON CON ICONOS FUNCIONA//////////////////////////
 

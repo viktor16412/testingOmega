@@ -47,7 +47,7 @@ public class IconManager {
     
     // Método para verificar si un icono existe
     public static boolean existsIcon(String name) {
-        String resourcePath = "/images/" + name + ".png";
+        String resourcePath = "/icons/" + name + ".png";
         return IconManager.class.getResourceAsStream(resourcePath) != null;
     }
     
@@ -55,11 +55,11 @@ public class IconManager {
     public static void listAvailableResources() {
         try {
             String[] resources = {
-                "/images/logo.png",
-                "/images/user.png",
-                "/images/key.png",
-                "/images/login.png",
-                "/images/cancel.png"
+                "/icons/logo.png",
+                "/icons/user.png",
+                "/icons/key.png",
+                "/icons/login.png",
+                "/icons/cancel.png"
             };
             
             logger.info("Verificando recursos disponibles:");
