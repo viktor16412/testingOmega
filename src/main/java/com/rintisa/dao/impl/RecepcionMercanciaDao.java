@@ -344,15 +344,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     }
         }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
+                      
     @Override
     public String generateNextNumeroRecepcion() throws DatabaseException {
     logger.debug("Generando nuevo número de recepción");
@@ -1862,11 +1854,6 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
             logger.error("Error al eliminar recepción", e);
             throw new DatabaseException("Error al eliminar recepción: " + e.getMessage());
         }
-    }
-    
-     
-    
-
-    
+    }   
 
 }

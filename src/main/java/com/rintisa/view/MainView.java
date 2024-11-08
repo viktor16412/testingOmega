@@ -13,6 +13,7 @@ import com.rintisa.model.Rol;
 import com.rintisa.service.impl.ProductoService;
 import com.rintisa.service.impl.ProveedorService;
 import com.rintisa.service.impl.RecepcionMercanciaService;
+import com.rintisa.service.impl.RecepcionReporteService;
 
 
 import com.rintisa.service.interfaces.IUsuarioService;
@@ -601,43 +602,49 @@ public class MainView extends JFrame {
 
     private void mostrarRecepcionMercancia() {
     try {
-            // Inicializar los DAOs necesarios
-            ProveedorDao proveedorDao = new ProveedorDao();
-            ProductoDao productoDao = new ProductoDao();
-            RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
+        // Inicializar los DAOs necesarios
+        ProveedorDao proveedorDao = new ProveedorDao();
+        ProductoDao productoDao = new ProductoDao();
+        RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
 
-            // Inicializar los Servicios
-            IProveedorService proveedorService = new ProveedorService(proveedorDao);
-            IProductoService productoService = new ProductoService(productoDao);
-            IRecepcionMercanciaService recepcionService = new RecepcionMercanciaService(recepcionDao, productoDao);
+        // Inicializar los Servicios
+        IProveedorService proveedorService = new ProveedorService(proveedorDao);
+        IProductoService productoService = new ProductoService(productoDao);
+        IRecepcionMercanciaService recepcionService = new RecepcionMercanciaService(
+            recepcionDao, 
+            productoDao);
 
-            // Crear el controlador
-            RecepcionMercanciaController controller = new RecepcionMercanciaController(
-                recepcionService,
-                productoService,
-                proveedorService,
-                userController
-            );
+        // Crear el servicio de reportes
+        RecepcionReporteService reporteService = new RecepcionReporteService(recepcionService);
 
-            // Crear la vista
-            RecepcionMercanciaView vista = new RecepcionMercanciaView(controller);
+        // Crear el controlador con todos los servicios necesarios
+        RecepcionMercanciaController controller = new RecepcionMercanciaController(
+            recepcionService,
+            productoService,
+            proveedorService,
+            userController,
+            reporteService
+        );
 
-            // Limpiar y mostrar la nueva vista
-            contentPanel.removeAll();
-            contentPanel.add(vista);
-            contentPanel.revalidate();
-            contentPanel.repaint();
+        // Crear la vista
+        RecepcionMercanciaView vista = new RecepcionMercanciaView(controller);
 
-            // Actualizar el título de la ventana
-            setTitle("RINTISA - Recepción de Mercancía");
+        // Limpiar y mostrar la nueva vista
+        contentPanel.removeAll();
+        contentPanel.add(vista);
+        contentPanel.revalidate();
+        contentPanel.repaint();
 
-        } catch (Exception e) {
-            logger.error("Error al mostrar la vista de Recepción de Mercancía", e);
-            JOptionPane.showMessageDialog(
-                this,
-                "Error al abrir la vista de Recepción de Mercancía: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE
+        // Actualizar el título de la ventana
+        setTitle("RINTISA - Recepción de Mercancía");
+
+    } catch (Exception e) {
+        logger.error("Error al mostrar la vista de Recepción de Mercancía", e);
+        JOptionPane.showMessageDialog(
+            this,
+            "Error al abrir la vista de Recepción de Mercancía: " + e.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE
             );
         }
 }
@@ -688,154 +695,3 @@ public class MainView extends JFrame {
     }
 }
 /////MAIN FUNCIONANDO 
-
-
-
-
-
-///MAIN PRUEBA//
-/*
-public class MainView extends JFrame {
-    
-    private static final Logger logger = LoggerFactory.getLogger(MainView.class);
-    
-    private final UsuarioController usuarioController;
-    private final RolController rolController;
-    private final IUsuarioService usuarioService;
-    private final IRolService rolService;
-    private final Usuario usuarioActual;
-
-    public MainView(UsuarioController usuarioController) {
-        this.usuarioController = usuarioController;
-        this.rolController = usuarioController.getRolController();
-        this.usuarioService = usuarioController.getUsuarioService();
-        this.rolService = usuarioController.getRolService();
-        this.usuarioActual = usuarioController.getUsuarioActual();
-        
-        initComponents();
-    }
-
-    private void initComponents() {
-        setTitle("Sistema RINTISA - " + usuarioActual.getNombre() + " " + usuarioActual.getApellido());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Crear menú
-        JMenuBar menuBar = new JMenuBar();
-        
-        // Menú Archivo
-        JMenu menuArchivo = new JMenu("Archivo");
-        JMenuItem menuCambiarPassword = new JMenuItem("Cambiar Contraseña");
-        JMenuItem menuSalir = new JMenuItem("Salir");
-        menuArchivo.add(menuCambiarPassword);
-        menuArchivo.addSeparator();
-        menuArchivo.add(menuSalir);
-        
-        // Menú Administración (solo visible para administradores)
-        JMenu menuAdmin = new JMenu("Administración");
-        JMenuItem menuUsuarios = new JMenuItem("Gestión de Usuarios");
-        JMenuItem menuRoles = new JMenuItem("Gestión de Roles");
-        menuAdmin.add(menuUsuarios);
-        menuAdmin.add(menuRoles);
-        menuAdmin.setVisible(usuarioController.esAdministrador(usuarioActual));
-        
-        // Menú Reportes
-        JMenu menuReportes = new JMenu("Reportes");
-        JMenuItem menuReporteUsuarios = new JMenuItem("Reporte de Usuarios");
-        JMenuItem menuReporteRoles = new JMenuItem("Reporte de Roles");
-        menuReportes.add(menuReporteUsuarios);
-        menuReportes.add(menuReporteRoles);
-
-        // Agregar menús
-        menuBar.add(menuArchivo);
-        menuBar.add(menuAdmin);
-        menuBar.add(menuReportes);
-        setJMenuBar(menuBar);
-
-        // Eventos de menú
-        menuCambiarPassword.addActionListener(e -> cambiarPassword());
-        menuSalir.addActionListener(e -> cerrarSistema());
-        menuUsuarios.addActionListener(e -> mostrarGestionUsuarios());
-        menuRoles.addActionListener(e -> mostrarGestionRoles());
-        menuReporteUsuarios.addActionListener(e -> generarReporteUsuarios());
-        menuReporteRoles.addActionListener(e -> generarReporteRoles());
-
-        // Panel principal
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Panel de bienvenida
-        JPanel welcomePanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridwidth = GridBagConstraints.REMAINDER;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(5, 5, 5, 5);
-
-        JLabel lblBienvenida = new JLabel("¡Bienvenido al Sistema RINTISA!");
-        lblBienvenida.setFont(new Font("Arial", Font.BOLD, 24));
-        welcomePanel.add(lblBienvenida, gbc);
-
-        JLabel lblUsuario = new JLabel("Usuario: " + usuarioActual.getNombre() + " " + usuarioActual.getApellido());
-        welcomePanel.add(lblUsuario, gbc);
-
-        JLabel lblRol = new JLabel("Rol: " + usuarioActual.getRol().getNombre());
-        welcomePanel.add(lblRol, gbc);
-
-        mainPanel.add(welcomePanel, BorderLayout.CENTER);
-        setContentPane(mainPanel);
-
-        // Configurar ventana
-        setSize(800, 600);
-        setLocationRelativeTo(null);
-    }
-
-    private void cambiarPassword() {
-        // Implementar cambio de contraseña
-    }
-
-    private void cerrarSistema() {
-        if (JOptionPane.showConfirmDialog(this,
-                "¿Está seguro que desea salir del sistema?",
-                "Confirmar Salida",
-                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-            System.exit(0);
-        }
-    }
-
-    private void mostrarGestionUsuarios() {
-        // Implementar gestión de usuarios
-    }
-
-    private void mostrarGestionRoles() {
-        // Implementar gestión de roles
-    }
-
-    private void generarReporteUsuarios() {
-        try {
-            java.util.List<Usuario> usuarios = usuarioService.listarTodos();
-            String rutaReporte = ReportGenerator.generarReporteUsuarios(usuarios);
-            ReportDialog.mostrarDialogoReporteGenerado(this, rutaReporte);
-            logger.info("Reporte de usuarios generado exitosamente");
-        } catch (Exception e) {
-            logger.error("Error al generar reporte de usuarios", e);
-            JOptionPane.showMessageDialog(this,
-                "Error al generar reporte: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void generarReporteRoles() {
-        try {
-            java.util.List<Rol> roles = rolService.listarTodos();
-            String rutaReporte = ReportGenerator.generarReporteRoles(roles);
-            ReportDialog.mostrarDialogoReporteGenerado(this, rutaReporte);
-            logger.info("Reporte de roles generado exitosamente");
-        } catch (Exception e) {
-            logger.error("Error al generar reporte de roles", e);
-            JOptionPane.showMessageDialog(this,
-                "Error al generar reporte: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-}*/

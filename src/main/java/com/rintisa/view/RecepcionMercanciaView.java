@@ -28,6 +28,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import com.toedter.calendar.JDateChooser; 
 import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -46,215 +48,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
-/*
-public class RecepcionMercanciaView extends JPanel {
-    private static final Logger logger = LoggerFactory.getLogger(RecepcionMercanciaView.class);
-    private final RecepcionMercanciaController controller;
-    
-    // Componentes UI
-    private JTable tablaRecepciones;
-    private DefaultTableModel modeloTabla;
-    private JTextField txtNumeroRecepcion;
-    private JTextField txtProveedor;
-    private JTextField txtOrdenCompra;
-    private JTextArea txtObservaciones;
-    private JComboBox<RecepcionMercancia.EstadoRecepcion> cmbEstado;
-    private JButton btnGuardar;
-    private JButton btnVerificar;
-    private JButton btnAceptar;
-    private JButton btnRechazar;
-    
-    public RecepcionMercanciaView(RecepcionMercanciaController controller) {
-        this.controller = controller;
-         // Verificar permisos antes de inicializar
-        if (!controller.tienePermisoAlmacen()) {
-            logger.warn("Intento de acceso no autorizado a RecepcionMercanciaView");
-            mostrarErrorPermiso();
-            return;
-        }
-        initComponents();
-        configureLayout();
-        configureEvents();
-        loadData();
-    }
-    
-    private void mostrarErrorPermiso() {
-        setLayout(new BorderLayout());
-        JPanel errorPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridwidth = GridBagConstraints.REMAINDER;
-        gbc.anchor = GridBagConstraints.CENTER;
-        
-        // Icono de error
-        JLabel iconLabel = new JLabel(new ImageIcon(getClass().getResource("/icons/error.png")));
-        errorPanel.add(iconLabel, gbc);
-        
-        // Mensaje de error
-        JLabel mensajeLabel = new JLabel("No tiene permisos para acceder a esta función");
-        mensajeLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        mensajeLabel.setForeground(Color.RED);
-        errorPanel.add(mensajeLabel, gbc);
-        
-        add(errorPanel, BorderLayout.CENTER);
-    }
-    
-     // Sobrescribir el método setEnabled para controlar el acceso
-    @Override
-    public void setEnabled(boolean enabled) {
-        super.setEnabled(enabled && controller.tienePermisoAlmacen());
-        // Deshabilitar todos los componentes si no tiene permiso
-        if (!controller.tienePermisoAlmacen()) {
-            deshabilitarComponentes(this);
-        }
-    }
-    
-    private void deshabilitarComponentes(Container container) {
-        for (Component component : container.getComponents()) {
-            component.setEnabled(false);
-            if (component instanceof Container) {
-                deshabilitarComponentes((Container) component);
-            }
-        }
-    }
-    
-    
-    
-    private void initComponents() {
-        // Inicializar componentes...
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Panel de datos
-        JPanel panelDatos = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        
-        // Agregar campos...
-        txtNumeroRecepcion = new JTextField(20);
-        txtProveedor = new JTextField(20);
-        txtOrdenCompra = new JTextField(20);
-        txtObservaciones = new JTextArea(4, 20);
-        cmbEstado = new JComboBox<>(RecepcionMercancia.EstadoRecepcion.values());
-        
-        // Botones
-        btnGuardar = new JButton("Guardar");
-        btnVerificar = new JButton("Verificar");
-        btnAceptar = new JButton("Aceptar");
-        btnRechazar = new JButton("Rechazar");
-        
-        // Configurar tabla
-        String[] columnas = {"ID", "Número", "Fecha", "Proveedor", "Estado"};
-        modeloTabla = new DefaultTableModel(columnas, 0);
-        tablaRecepciones = new JTable(modeloTabla);
-    }
-    
-    private void configureLayout() {
-        // Configurar layout... 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        
-        // Panel izquierdo con la tabla
-        JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.add(new JScrollPane(tablaRecepciones), BorderLayout.CENTER);
-        
-        // Panel derecho con el formulario
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        // Agregar campos del formulario...
-        
-        // Panel de botones
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(btnGuardar);
-        buttonPanel.add(btnVerificar);
-        buttonPanel.add(btnAceptar);
-        buttonPanel.add(btnRechazar);
-        
-        // Agregar todo al panel principal
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                                            leftPanel, rightPanel);
-        splitPane.setResizeWeight(0.6);
-        
-        mainPanel.add(splitPane, BorderLayout.CENTER);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        add(mainPanel);
-    }
-    
-    private void configureEvents() {
-        btnGuardar.addActionListener(e -> guardarRecepcion());
-        btnVerificar.addActionListener(e -> verificarRecepcion());
-        btnAceptar.addActionListener(e -> aceptarRecepcion());
-        btnRechazar.addActionListener(e -> rechazarRecepcion());
-    }
-    
-    private void loadData() {
-         if (!controller.tienePermisoAlmacen()) {
-            logger.warn("Intento de carga de datos sin permisos");
-            return;
-        }
-        
-        try {
-            // Lógica de carga de datos...
-        } catch (Exception e) {
-            logger.error("Error al cargar datos", e);
-            JOptionPane.showMessageDialog(this,
-                "Error al cargar datos: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    // Verificar permisos antes de cada operación crítica
-    private void verificarPermisosAntes(Runnable operacion) {
-        if (!controller.tienePermisoAlmacen()) {
-            logger.warn("Intento de operación no autorizada en RecepcionMercanciaView");
-            JOptionPane.showMessageDialog(this,
-                "No tiene permisos para realizar esta operación",
-                "Acceso Denegado",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        operacion.run();
-    }
-    
-    private void guardarRecepcion() {
-         verificarPermisosAntes(() -> {
-            try {
-                // Lógica de guardado...
-            } catch (Exception e) {
-                logger.error("Error al guardar recepción", e);
-                JOptionPane.showMessageDialog(this,
-                    "Error al guardar: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        });
-    }
-    
-    private void verificarRecepcion() {
-        verificarPermisosAntes(() -> {
-            try {
-                // Lógica de verificación...
-            } catch (Exception e) {
-                logger.error("Error al verificar recepción", e);
-                JOptionPane.showMessageDialog(this,
-                    "Error al verificar: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        });
-    }
-    
-    private void aceptarRecepcion() {
-        // Implementar aceptación
-    }
-    
-    private void rechazarRecepcion() {
-        // Implementar rechazo
-    }
-    
-}
-*/
 
 public class RecepcionMercanciaView extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(RecepcionMercanciaView.class);
@@ -295,6 +88,8 @@ public class RecepcionMercanciaView extends JPanel {
     private JButton btnRechazar;
     private JButton btnEliminar;
 
+    private JButton btnReporte;    
+    
     public RecepcionMercanciaView(RecepcionMercanciaController controller) {
         
         this.controller = controller;
@@ -312,9 +107,7 @@ public class RecepcionMercanciaView extends JPanel {
        setupEventListeners(); // Configurar eventos
        loadInitialData();     // Cargar datos iniciales
     }
-
-   
-    
+       
    // Clase del modelo de tabla
     private class RecepcionTableModel extends DefaultTableModel {
          private final String[] columnNames = {
@@ -440,6 +233,9 @@ public class RecepcionMercanciaView extends JPanel {
         btnAceptar = new JButton("Aceptar");
         btnRechazar = new JButton("Rechazar");
         btnEliminar = new JButton("Eliminar");
+        
+        btnReporte = new JButton("Reporte General");
+        btnReporte.setToolTipText("Generar reporte general de recepciones");
 
         // Crear la tabla
         tablaRecepciones = new JTable(modeloTabla);
@@ -630,6 +426,7 @@ public class RecepcionMercanciaView extends JPanel {
         leftButtons.add(btnNuevo);
         leftButtons.add(btnEditar);
         leftButtons.add(btnEliminar);
+        leftButtons.add(btnReporte);
 
         // Panel derecho para botones de proceso
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -678,6 +475,7 @@ public class RecepcionMercanciaView extends JPanel {
         btnAceptar.addActionListener(e -> aceptarRecepcion());
         btnRechazar.addActionListener(e -> rechazarRecepcion());
         btnEliminar.addActionListener(e -> eliminarRecepcion());
+        btnReporte.addActionListener(e -> mostrarDialogoReporte());
         
     }
         
@@ -1950,9 +1748,108 @@ public class RecepcionMercanciaView extends JPanel {
         fechaFin.addPropertyChangeListener(dateListener);
     }
     
-    
-    
-    
-    
+    private void mostrarDialogoReporte() {
+    // Crear un diálogo para seleccionar el rango de fechas
+    JDialog dialogoReporte = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+        "Generar Reporte General", true);
+    dialogoReporte.setLayout(new BorderLayout(10, 10));
+
+    // Panel principal
+    JPanel panel = new JPanel(new GridBagLayout());
+    panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc.insets = new Insets(5, 5, 5, 5);
+
+    // Selector de fecha inicial
+    panel.add(new JLabel("Fecha Inicio:"), gbc);
+    JDateChooser fechaInicio = new JDateChooser();
+    fechaInicio.setDateFormatString("dd/MM/yyyy");
+    gbc.gridx = 1;
+    panel.add(fechaInicio, gbc);
+
+    // Selector de fecha final
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    panel.add(new JLabel("Fecha Fin:"), gbc);
+    JDateChooser fechaFin = new JDateChooser();
+    fechaFin.setDateFormatString("dd/MM/yyyy");
+    gbc.gridx = 1;
+    panel.add(fechaFin, gbc);
+
+    // Panel de botones
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton btnGenerar = new JButton("Generar");
+    JButton btnCancelar = new JButton("Cancelar");
+
+    btnGenerar.addActionListener(e -> {
+        try {
+            // Validar fechas
+            if (fechaInicio.getDate() == null || fechaFin.getDate() == null) {
+                JOptionPane.showMessageDialog(dialogoReporte,
+                    "Por favor seleccione ambas fechas",
+                    "Validación",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Convertir fechas a LocalDateTime
+            LocalDateTime inicio = fechaInicio.getDate().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .withHour(0).withMinute(0).withSecond(0);
+
+            LocalDateTime fin = fechaFin.getDate().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .withHour(23).withMinute(59).withSecond(59);
+
+            // Generar el reporte
+            byte[] reporteBytes = controller.generarReporteGeneral(inicio, fin);
+
+            // Guardar el archivo
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar Reporte");
+            fileChooser.setSelectedFile(new File("Reporte_Recepciones.xlsx"));
+            
+            if (fileChooser.showSaveDialog(dialogoReporte) == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                if (!file.getName().toLowerCase().endsWith(".xlsx")) {
+                    file = new File(file.getParentFile(), file.getName() + ".xlsx");
+                }
+                
+                try (FileOutputStream fos = new FileOutputStream(file)) {
+                    fos.write(reporteBytes);
+                    JOptionPane.showMessageDialog(dialogoReporte,
+                        "Reporte generado exitosamente",
+                        "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    dialogoReporte.dispose();
+                }
+            }
+        } catch (Exception ex) {
+            logger.error("Error al generar reporte", ex);
+            JOptionPane.showMessageDialog(dialogoReporte,
+                "Error al generar reporte: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    });
+
+    btnCancelar.addActionListener(e -> dialogoReporte.dispose());
+
+    buttonPanel.add(btnGenerar);
+    buttonPanel.add(btnCancelar);
+
+    dialogoReporte.add(panel, BorderLayout.CENTER);
+    dialogoReporte.add(buttonPanel, BorderLayout.SOUTH);
+
+    dialogoReporte.pack();
+    dialogoReporte.setLocationRelativeTo(this);
+    dialogoReporte.setVisible(true);
+    }
+
     
 }

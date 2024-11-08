@@ -434,7 +434,6 @@ public class RolService implements IRolService {
             throw new DatabaseException("Error al verificar permiso: " + e.getMessage());
         }
     }
-    
-    
+   
 }
 

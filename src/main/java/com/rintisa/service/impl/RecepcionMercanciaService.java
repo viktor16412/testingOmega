@@ -13,6 +13,7 @@ import com.rintisa.model.Producto;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
+import com.rintisa.service.interfaces.IRecepcionReporteService;
 import java.sql.Connection;
 import java.sql.SQLException;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
     }
 
     public RecepcionMercanciaService(RecepcionMercanciaDao recepcionDao) {
-         this(recepcionDao, null);// Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+         this(recepcionDao, null);
     }
 
     @Override
@@ -61,7 +62,7 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
     }
 
     @Override
-public void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRecibidas, 
+    public void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRecibidas, 
                              String observaciones) throws DatabaseException, ValidationException {
     Connection conn = null;
     try {
@@ -161,11 +162,6 @@ public void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRe
 }
     
     
-    
-    
-    
-    
-    
     @Override
     public void eliminar(Long id) throws DatabaseException, ValidationException {
     try {
@@ -198,9 +194,7 @@ public void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRe
         throw new DatabaseException("Error al eliminar recepción: " + e.getMessage());
     }
 }
-      
-       
-    
+         
 
     @Override
     public void aceptarRecepcion(Long recepcionId, String observaciones) 
@@ -314,9 +308,6 @@ public void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRe
         }
     }
     
-    
-    
-
     @Override
     public List<DetalleRecepcion> listarDetalles(Long recepcionId) throws DatabaseException {
         return recepcionDao.findDetallesByRecepcionId(recepcionId);
@@ -407,11 +398,6 @@ public void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRe
         // Implementar exportación según formato (PDF, Excel)
         throw new UnsupportedOperationException("Método no implementado");
     }
-    
-    
-    
-    
-    
-    
+         
     
 }

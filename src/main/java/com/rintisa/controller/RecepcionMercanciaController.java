@@ -8,11 +8,13 @@ import com.rintisa.service.interfaces.IRecepcionMercanciaService;
 import com.rintisa.service.interfaces.IProductoService;
 import com.rintisa.service.interfaces.IProveedorService;
 import com.rintisa.exception.DatabaseException;
+import com.rintisa.exception.ReportException;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.Proveedor;
 import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
 import com.rintisa.model.Usuario;
 import com.rintisa.service.impl.RecepcionMercanciaService;
+import com.rintisa.service.impl.RecepcionReporteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,22 +30,31 @@ public class RecepcionMercanciaController {
     private final IProductoService productoService;
     private final UsuarioController usuarioController;
     private final IProveedorService proveedorService;
-
+    private final RecepcionReporteService reporteService;
+    
     public RecepcionMercanciaController(
+            
             IRecepcionMercanciaService recepcionService,
             IProductoService productoService, IProveedorService proveedorService,
-            UsuarioController usuarioController) {
+            UsuarioController usuarioController,
+            RecepcionReporteService reporteService) {
         
         if (recepcionService == null) throw new IllegalArgumentException("recepcionService no puede ser null");
         if (productoService == null) throw new IllegalArgumentException("productoService no puede ser null");
         if (proveedorService == null) throw new IllegalArgumentException("proveedorService no puede ser null");
         if (usuarioController == null) throw new IllegalArgumentException("usuarioController no puede ser null");    
-        
+        if (reporteService == null) throw new IllegalArgumentException("reporteService no puede ser null");
+
+          
         this.recepcionService = recepcionService;
         this.productoService = productoService;
         this.proveedorService = proveedorService;
         this.usuarioController = usuarioController;
+        this.reporteService = reporteService;
     }
+    
+    
+    
     
     public RecepcionMercancia crearRecepcion(String numeroOrdenCompra, String proveedorId, String observaciones) {
         try {
@@ -184,16 +195,6 @@ public class RecepcionMercanciaController {
             throw new RuntimeException("No se pudo obtener la lista de productos: " + e.getMessage());
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
     /**
      * Acepta una recepción verificada
@@ -410,7 +411,7 @@ public class RecepcionMercanciaController {
         return getUsuarioActual() != null;
     }
     
-     public void eliminarRecepcion(Long recepcionId) {
+    public void eliminarRecepcion(Long recepcionId) {
         try {
             // Obtener la recepción
             Optional<RecepcionMercancia> recepcionOpt = recepcionService.buscarPorId(recepcionId);
@@ -436,7 +437,19 @@ public class RecepcionMercanciaController {
         }
     }
     
-    
+    public byte[] generarReporteGeneral(LocalDateTime fechaInicio, LocalDateTime fechaFin) 
+        throws ReportException {
+    try {
+        logger.debug("Generando reporte general para período: {} - {}", 
+            fechaInicio, fechaFin);
+        
+        return reporteService.generarReporteGeneral(fechaInicio, fechaFin);
+        
+    } catch (Exception e) {
+        logger.error("Error al generar reporte general", e);
+        throw new ReportException("Error al generar reporte: " + e.getMessage());
+    }
+        }
     
     
 }

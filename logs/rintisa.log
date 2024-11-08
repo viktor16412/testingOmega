@@ -8411,3 +8411,143 @@ cantidadRecibida:
 2024-11-08 16:07:18 [AWT-EventQueue-0] DEBUG com.rintisa.service.impl.RolService - Listando todos los roles
 2024-11-08 16:07:20 [AWT-EventQueue-0] INFO  com.rintisa.util.ReportGenerator - Reporte de roles generado: reportes\Reporte_Roles_20241108_160718.xlsx
 2024-11-08 16:07:43 [AWT-EventQueue-0] INFO  com.rintisa.view.MainView - Usuario pmorales cerrando sesión
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.LogUtils - === Inicio de la aplicación ===
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.LogUtils - Sistema Operativo: Windows 11 10.0
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.LogUtils - Java Version: 20.0.2
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.LogUtils - User Home: C:\Users\rotvik
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.LogUtils - Working Directory: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.LogUtils - Log Directory: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal\logs
+2024-11-08 17:29:35 [main] INFO  com.rintisa.MainApplication - Iniciando aplicación
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - Sistema de logging inicializado correctamente
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - Directorio de logs: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal\logs
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - === Información del Sistema ===
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - OS: Windows 11 version 10.0
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - Java version: 20.0.2
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - User home: C:\Users\rotvik
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - Working directory: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - File encoding: UTF-8
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - Available processors: 8
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - Max memory: 4054 MB
+2024-11-08 17:29:35 [main] INFO  c.rintisa.config.LoggingInitializer - ===========================
+2024-11-08 17:29:35 [main] INFO  com.rintisa.MainApplication - Verificando recursos de la aplicación...
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.IconManager - Verificando recursos disponibles:
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.IconManager -   /icons/logo.png : ENCONTRADO
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.IconManager -   /icons/user.png : ENCONTRADO
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.IconManager -   /icons/key.png : ENCONTRADO
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.IconManager -   /icons/login.png : ENCONTRADO
+2024-11-08 17:29:35 [main] INFO  com.rintisa.util.IconManager -   /icons/cancel.png : ENCONTRADO
+2024-11-08 17:29:36 [main] INFO  com.rintisa.MainApplication - FlatLaf configurado como Look and Feel
+2024-11-08 17:29:36 [main] INFO  com.rintisa.MainApplication - Iniciando Sistema RINTISA
+2024-11-08 17:29:36 [main] INFO  com.rintisa.MainApplication - JVM: 20.0.2
+2024-11-08 17:29:36 [main] INFO  com.rintisa.MainApplication - OS: Windows 11 10.0
+2024-11-08 17:29:36 [main] INFO  com.rintisa.config.DatabaseConfig - Propiedades de base de datos cargadas correctamente
+2024-11-08 17:29:36 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2024-11-08 17:29:36 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@c667f46
+2024-11-08 17:29:36 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2024-11-08 17:29:36 [main] INFO  com.rintisa.config.DatabaseConfig - Pool de conexiones inicializado correctamente
+2024-11-08 17:29:36 [main] INFO  com.rintisa.MainApplication - Conexión a base de datos establecida
+2024-11-08 17:29:36 [AWT-EventQueue-0] DEBUG com.rintisa.MainApplication - DAOs inicializados
+2024-11-08 17:29:36 [AWT-EventQueue-0] DEBUG com.rintisa.MainApplication - Servicios inicializados
+2024-11-08 17:29:36 [AWT-EventQueue-0] DEBUG com.rintisa.MainApplication - Controladores inicializados
+2024-11-08 17:29:36 [AWT-EventQueue-0] INFO  com.rintisa.MainApplication - Ventana de login mostrada
+2024-11-08 17:29:36 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Iniciando LoginView
+2024-11-08 17:29:36 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Inicializando componentes
+2024-11-08 17:29:36 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Configurando ventana
+2024-11-08 17:29:37 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Configurando eventos
+2024-11-08 17:29:37 [AWT-EventQueue-0] INFO  com.rintisa.view.LoginView - LoginView inicializado correctamente
+2024-11-08 17:30:19 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Intento de login para usuario: pmorales
+2024-11-08 17:30:19 [SwingWorker-pool-1-thread-1] DEBUG com.rintisa.view.LoginView - Iniciando autenticación para usuario: pmorales
+2024-11-08 17:30:19 [SwingWorker-pool-1-thread-1] DEBUG c.r.service.impl.UsuarioService - Intentando autenticar usuario: pmorales
+2024-11-08 17:30:19 [SwingWorker-pool-1-thread-1] WARN  c.r.service.impl.UsuarioService - Contraseña incorrecta para usuario: pmorales
+2024-11-08 17:30:19 [SwingWorker-pool-1-thread-1] DEBUG c.r.service.impl.UsuarioService - Buscando usuario por username: pmorales
+2024-11-08 17:30:19 [SwingWorker-pool-1-thread-1] INFO  c.r.service.impl.UsuarioService - Acceso registrado - Usuario: pmorales, Tipo: Intento Fallido
+2024-11-08 17:30:19 [AWT-EventQueue-0] WARN  com.rintisa.view.LoginView - Login fallido para usuario: pmorales
+2024-11-08 17:30:19 [AWT-EventQueue-0] WARN  com.rintisa.view.LoginView - Error de login: Usuario o contraseña incorrectos
+2024-11-08 17:30:22 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Intento de login para usuario: pmorales
+2024-11-08 17:30:22 [SwingWorker-pool-1-thread-2] DEBUG com.rintisa.view.LoginView - Iniciando autenticación para usuario: pmorales
+2024-11-08 17:30:22 [SwingWorker-pool-1-thread-2] DEBUG c.r.service.impl.UsuarioService - Intentando autenticar usuario: pmorales
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] INFO  c.r.service.impl.UsuarioService - Usuario autenticado exitosamente: pmorales
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] DEBUG com.rintisa.dao.impl.UsuarioDao - Último acceso actualizado para usuario ID: 7
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] DEBUG c.r.service.impl.UsuarioService - Último acceso actualizado para usuario: pmorales
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] DEBUG c.r.service.impl.UsuarioService - Buscando usuario por username: pmorales
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] DEBUG com.rintisa.dao.impl.UsuarioDao - Último acceso actualizado para usuario ID: 7
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] DEBUG c.r.service.impl.UsuarioService - Último acceso actualizado para usuario: pmorales
+2024-11-08 17:30:23 [SwingWorker-pool-1-thread-2] INFO  c.r.service.impl.UsuarioService - Acceso registrado - Usuario: pmorales, Tipo: Inicio de Sesión
+2024-11-08 17:30:23 [AWT-EventQueue-0] INFO  com.rintisa.view.LoginView - Login exitoso para usuario: pmorales
+2024-11-08 17:30:23 [AWT-EventQueue-0] INFO  com.rintisa.view.LoginView - Login exitoso para usuario: pmorales
+2024-11-08 17:30:23 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Usuario actual: pmorales, Rol: ALMACEN
+2024-11-08 17:30:23 [AWT-EventQueue-0] DEBUG com.rintisa.view.MainView - Iniciando construcción de MainView
+2024-11-08 17:30:23 [AWT-EventQueue-0] INFO  com.rintisa.view.MainView - Ventana principal inicializada para usuario: pmorales
+2024-11-08 17:31:32 [AWT-EventQueue-0] INFO  com.rintisa.view.MainView - Usuario pmorales cerrando sesión
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.LogUtils - === Inicio de la aplicación ===
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.LogUtils - Sistema Operativo: Windows 11 10.0
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.LogUtils - Java Version: 20.0.2
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.LogUtils - User Home: C:\Users\rotvik
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.LogUtils - Working Directory: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.LogUtils - Log Directory: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal\logs
+2024-11-08 18:19:11 [main] INFO  com.rintisa.MainApplication - Iniciando aplicación
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - Sistema de logging inicializado correctamente
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - Directorio de logs: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal\logs
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - === Información del Sistema ===
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - OS: Windows 11 version 10.0
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - Java version: 20.0.2
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - User home: C:\Users\rotvik
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - Working directory: C:\Users\rotvik\Documents\NetBeansProjects\rintisafinal
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - File encoding: UTF-8
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - Available processors: 8
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - Max memory: 4054 MB
+2024-11-08 18:19:11 [main] INFO  c.rintisa.config.LoggingInitializer - ===========================
+2024-11-08 18:19:11 [main] INFO  com.rintisa.MainApplication - Verificando recursos de la aplicación...
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.IconManager - Verificando recursos disponibles:
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.IconManager -   /icons/logo.png : ENCONTRADO
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.IconManager -   /icons/user.png : ENCONTRADO
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.IconManager -   /icons/key.png : ENCONTRADO
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.IconManager -   /icons/login.png : ENCONTRADO
+2024-11-08 18:19:11 [main] INFO  com.rintisa.util.IconManager -   /icons/cancel.png : ENCONTRADO
+2024-11-08 18:19:11 [main] INFO  com.rintisa.MainApplication - FlatLaf configurado como Look and Feel
+2024-11-08 18:19:11 [main] INFO  com.rintisa.MainApplication - Iniciando Sistema RINTISA
+2024-11-08 18:19:11 [main] INFO  com.rintisa.MainApplication - JVM: 20.0.2
+2024-11-08 18:19:11 [main] INFO  com.rintisa.MainApplication - OS: Windows 11 10.0
+2024-11-08 18:19:11 [main] INFO  com.rintisa.config.DatabaseConfig - Propiedades de base de datos cargadas correctamente
+2024-11-08 18:19:11 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2024-11-08 18:19:12 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@c667f46
+2024-11-08 18:19:12 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2024-11-08 18:19:12 [main] INFO  com.rintisa.config.DatabaseConfig - Pool de conexiones inicializado correctamente
+2024-11-08 18:19:12 [main] INFO  com.rintisa.MainApplication - Conexión a base de datos establecida
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.MainApplication - DAOs inicializados
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.MainApplication - Servicios inicializados
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.MainApplication - Controladores inicializados
+2024-11-08 18:19:12 [AWT-EventQueue-0] INFO  com.rintisa.MainApplication - Ventana de login mostrada
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Iniciando LoginView
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Inicializando componentes
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Configurando ventana
+2024-11-08 18:19:12 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Configurando eventos
+2024-11-08 18:19:12 [AWT-EventQueue-0] INFO  com.rintisa.view.LoginView - LoginView inicializado correctamente
+2024-11-08 18:19:17 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Intento de login para usuario: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG com.rintisa.view.LoginView - Iniciando autenticación para usuario: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG c.r.service.impl.UsuarioService - Intentando autenticar usuario: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] INFO  c.r.service.impl.UsuarioService - Usuario autenticado exitosamente: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG com.rintisa.dao.impl.UsuarioDao - Último acceso actualizado para usuario ID: 7
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG c.r.service.impl.UsuarioService - Último acceso actualizado para usuario: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG c.r.service.impl.UsuarioService - Buscando usuario por username: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG com.rintisa.dao.impl.UsuarioDao - Último acceso actualizado para usuario ID: 7
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] DEBUG c.r.service.impl.UsuarioService - Último acceso actualizado para usuario: pmorales
+2024-11-08 18:19:17 [SwingWorker-pool-1-thread-1] INFO  c.r.service.impl.UsuarioService - Acceso registrado - Usuario: pmorales, Tipo: Inicio de Sesión
+2024-11-08 18:19:17 [AWT-EventQueue-0] INFO  com.rintisa.view.LoginView - Login exitoso para usuario: pmorales
+2024-11-08 18:19:17 [AWT-EventQueue-0] INFO  com.rintisa.view.LoginView - Login exitoso para usuario: pmorales
+2024-11-08 18:19:17 [AWT-EventQueue-0] DEBUG com.rintisa.view.LoginView - Usuario actual: pmorales, Rol: ALMACEN
+2024-11-08 18:19:17 [AWT-EventQueue-0] DEBUG com.rintisa.view.MainView - Iniciando construcción de MainView
+2024-11-08 18:19:17 [AWT-EventQueue-0] INFO  com.rintisa.view.MainView - Ventana principal inicializada para usuario: pmorales
+2024-11-08 18:19:27 [AWT-EventQueue-0] DEBUG c.r.c.RecepcionMercanciaController - Generando reporte general para período: 2024-11-01T00:00 - 2024-11-08T23:59:59.431
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Buscando recepciones entre 2024-11-01T00:00 y 2024-11-08T23:59:59.431
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Se encontraron 7 recepciones en el rango de fechas
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 17, Producto: PRD002, Cantidad Esp: 22, Cantidad Rec: 10
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 15, Producto: PRD001, Cantidad Esp: 20, Cantidad Rec: 20
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 14, Producto: PRD002, Cantidad Esp: 20, Cantidad Rec: 20
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 16, Producto: PRD003, Cantidad Esp: 20, Cantidad Rec: 15
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 13, Producto: PRD003, Cantidad Esp: 100, Cantidad Rec: 100
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 12, Producto: PRD004, Cantidad Esp: 500, Cantidad Rec: 50
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 9, Producto: PRD001, Cantidad Esp: 100, Cantidad Rec: 5
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 10, Producto: PRD002, Cantidad Esp: 80, Cantidad Rec: 80
+2024-11-08 18:19:28 [AWT-EventQueue-0] DEBUG c.r.dao.impl.RecepcionMercanciaDao - Detalle cargado - ID: 11, Producto: PRD003, Cantidad Esp: 90, Cantidad Rec: 90
+2024-11-08 18:20:08 [AWT-EventQueue-0] INFO  com.rintisa.view.MainView - Usuario pmorales cerrando sesión
