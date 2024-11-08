@@ -7,6 +7,8 @@ import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.model.DetalleRecepcion;
+import com.rintisa.model.Producto;
+import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,28 +91,24 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 
     @Override
     public List<RecepcionMercancia> findAll() throws DatabaseException {
-        String sql = "SELECT rm.*, u.username as responsable_username, " +
-                    "p.razon_social as proveedor_nombre " +
-                    "FROM recepciones_mercancia rm " +
-                    "LEFT JOIN usuarios u ON rm.usuario_id = u.id " +
-                    "LEFT JOIN proveedores p ON rm.proveedor_id = p.id " +
-                    "ORDER BY rm.fecha_recepcion DESC";
-
-        List<RecepcionMercancia> recepciones = new ArrayList<>();
-
-        try (Connection conn = DatabaseConfig.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                recepciones.add(mapResultSetToRecepcion(rs));
-            }
-
-            return recepciones;
-        } catch (SQLException e) {
-            logger.error("Error finding all receptions", e);
-            throw new DatabaseException("Error finding all receptions: " + e.getMessage());
+        String sql = "SELECT rm.*, p.razon_social as proveedor_nombre " +
+                "FROM recepciones_mercancia rm " +
+                "LEFT JOIN proveedores p ON rm.proveedor_id = p.id " +
+                "ORDER BY rm.fecha_recepcion DESC";
+                
+    List<RecepcionMercancia> recepciones = new ArrayList<>();
+    try (Connection conn = DatabaseConfig.getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            recepciones.add(mapResultSetToRecepcion(rs));
         }
+        return recepciones;
+    } catch (SQLException e) {
+        logger.error("Error al obtener las recepciones", e);
+        throw new DatabaseException("Error al obtener la lista de recepciones: " + e.getMessage());
+    }
     }
     
     @Override
@@ -151,57 +149,66 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 
     @Override
     public void update(RecepcionMercancia recepcion) throws DatabaseException {
-        String sql = "UPDATE recepciones_mercancia SET estado = ?, observaciones = ?, " +
-                    "fecha_verificacion = ?, fecha_finalizacion = ? WHERE id = ?";
+          String sql = "UPDATE recepciones_mercancia SET " +
+                "estado = ?, " +
+                "observaciones = ?, " +
+                "fecha_verificacion = ?, " +
+                "fecha_finalizacion = ? " +
+                "WHERE id = ?";
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+    try (Connection conn = DatabaseConfig.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, recepcion.getEstado().name());
-            stmt.setString(2, recepcion.getObservaciones());
-            
-            if (recepcion.getFechaVerificacion() != null) {
-                stmt.setTimestamp(3, Timestamp.valueOf(recepcion.getFechaVerificacion()));
-            } else {
-                stmt.setNull(3, Types.TIMESTAMP);
-            }
-            
-            if (recepcion.getFechaFinalizacion() != null) {
-                stmt.setTimestamp(4, Timestamp.valueOf(recepcion.getFechaFinalizacion()));
-            } else {
-                stmt.setNull(4, Types.TIMESTAMP);
-            }
-            
-            stmt.setLong(5, recepcion.getId());
+        // Log para debug
+        logger.debug("Actualizando recepción ID: {}, Estado: {}", 
+            recepcion.getId(), recepcion.getEstado());
 
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new DatabaseException("Updating reception failed, no rows affected.");
-            }
-        } catch (SQLException e) {
-            logger.error("Error updating reception", e);
-            throw new DatabaseException("Error updating reception: " + e.getMessage());
+        // Establecer parámetros
+        stmt.setString(1, recepcion.getEstado().name());
+        
+        // Manejar observaciones que pueden ser null
+        if (recepcion.getObservaciones() != null && !recepcion.getObservaciones().trim().isEmpty()) {
+            stmt.setString(2, recepcion.getObservaciones().trim());
+        } else {
+            stmt.setNull(2, Types.VARCHAR);
+        }
+        
+        // Manejar fecha de verificación
+        if (recepcion.getFechaVerificacion() != null) {
+            stmt.setTimestamp(3, Timestamp.valueOf(recepcion.getFechaVerificacion()));
+        } else {
+            stmt.setNull(3, Types.TIMESTAMP);
+        }
+
+        // Manejar fecha de finalización
+        if (recepcion.getFechaFinalizacion() != null) {
+            stmt.setTimestamp(4, Timestamp.valueOf(recepcion.getFechaFinalizacion()));
+        } else {
+            stmt.setNull(4, Types.TIMESTAMP);
+        }
+        
+        // ID de la recepción
+        stmt.setLong(5, recepcion.getId());
+
+        // Ejecutar la actualización
+        int affectedRows = stmt.executeUpdate();
+        
+        if (affectedRows == 0) {
+            throw new DatabaseException("No se encontró la recepción con ID: " + recepcion.getId());
+        }
+
+        logger.debug("Recepción actualizada exitosamente. ID: {}", recepcion.getId());
+
+    } catch (SQLException e) {
+        logger.error("Error SQL al actualizar recepción: {}", e.getMessage());
+        throw new DatabaseException("Error al actualizar recepción: " + e.getMessage());
         }
     }
 
     @Override
     public void delete(Long id) throws DatabaseException {
-        // No implementamos delete físico por auditoría
-        String sql = "UPDATE recepciones_mercancia SET estado = 'ANULADO' WHERE id = ?";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setLong(1, id);
-
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new DatabaseException("Deleting reception failed, no rows affected.");
-            }
-        } catch (SQLException e) {
-            logger.error("Error deleting reception", e);
-            throw new DatabaseException("Error deleting reception: " + e.getMessage());
-        }
+        // Este método ahora puede llamar a deleteWithTransaction
+        deleteWithTransaction(id);
     }
     
     @Override
@@ -242,63 +249,108 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     @Override
     public DetalleRecepcion saveDetalle(DetalleRecepcion detalle) throws DatabaseException {
-    logger.debug("Guardando detalle de recepción para el producto ID: {}", 
-        detalle.getProducto().getId());
     
-    String sql = "INSERT INTO detalle_recepcion " +
-                "(recepcion_id, producto_id, cantidad_esperada, cantidad_recibida, " +
-                "precio_unitario, estado, observaciones) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO detalle_recepcion " +
+                    "(recepcion_id, producto_id, cantidad_esperada, " +
+                    "precio_unitario, estado) " +
+                    "VALUES (?, ?, ?, ?, ?)";
 
-    try (Connection conn = DatabaseConfig.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            stmt.setLong(1, detalle.getRecepcion().getId());
+            stmt.setLong(2, detalle.getProducto().getId());
+            stmt.setInt(3, detalle.getCantidadEsperada());
+            stmt.setDouble(4, detalle.getPrecioUnitario());
+            stmt.setString(5, detalle.getEstado().name());
 
-        stmt.setLong(1, detalle.getRecepcion().getId());
-        stmt.setLong(2, detalle.getProducto().getId());
-        stmt.setInt(3, detalle.getCantidadEsperada());
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new DatabaseException("No se pudo crear el detalle de recepción");
+            }
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    detalle.setId(generatedKeys.getLong(1));
+                } else {
+                    throw new DatabaseException("No se pudo obtener el ID generado para el detalle");
+                }
+            }
+
+            logger.debug("Detalle guardado con ID: {}", detalle.getId());
+            return detalle;
+            
+        } catch (SQLException e) {
+            logger.error("Error al guardar detalle de recepción", e);
+            throw new DatabaseException("Error al guardar detalle: " + e.getMessage());
+        }
+    }
+
+    
+    @Override
+    public void deleteWithTransaction(Long id) throws DatabaseException {
+    Connection conn = null;
+    try {
+        conn = DatabaseConfig.getConnection();
+        conn.setAutoCommit(false);
         
-        // Cantidad recibida puede ser null inicialmente
-        if (detalle.getCantidadRecibida() != null) {
-            stmt.setInt(4, detalle.getCantidadRecibida());
-        } else {
-            stmt.setNull(4, Types.INTEGER);
+        // Primero eliminar los detalles
+        String sqlDetalles = "DELETE FROM detalle_recepcion WHERE recepcion_id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sqlDetalles)) {
+            stmt.setLong(1, id);
+            stmt.executeUpdate();
+            logger.debug("Detalles de la recepción {} eliminados", id);
         }
         
-        stmt.setDouble(5, detalle.getPrecioUnitario());
-        stmt.setString(6, detalle.getEstado().name());
-        
-        // Observaciones puede ser null
-        if (detalle.getObservaciones() != null) {
-            stmt.setString(7, detalle.getObservaciones());
-        } else {
-            stmt.setNull(7, Types.VARCHAR);
+        // Luego eliminar la recepción
+        String sqlRecepcion = "DELETE FROM recepciones_mercancia WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sqlRecepcion)) {
+            stmt.setLong(1, id);
+            int affectedRows = stmt.executeUpdate();
+            
+            if (affectedRows == 0) {
+                throw new DatabaseException("No se pudo eliminar la recepción");
+            }
+            logger.debug("Recepción {} eliminada", id);
         }
-
-        int affectedRows = stmt.executeUpdate();
         
-        if (affectedRows == 0) {
-            throw new DatabaseException("Creating detalle failed, no rows affected.");
-        }
-
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                detalle.setId(generatedKeys.getLong(1));
-            } else {
-                throw new DatabaseException("Creating detalle failed, no ID obtained.");
+        // Commit si todo fue exitoso
+        conn.commit();
+        logger.info("Recepción {} y sus detalles eliminados exitosamente", id);
+        
+    } catch (Exception e) {
+        // Rollback en caso de error
+        if (conn != null) {
+            try {
+                conn.rollback();
+                logger.debug("Rollback ejecutado por error en eliminación");
+            } catch (SQLException ex) {
+                logger.error("Error al hacer rollback", ex);
             }
         }
-
-        // Si se guardó exitosamente, actualizar el total en la recepción
-        actualizarTotalRecepcion(detalle.getRecepcion().getId(), conn);
-
-        logger.info("Detalle guardado exitosamente con ID: {}", detalle.getId());
-        return detalle;
-
-    } catch (SQLException e) {
-        logger.error("Error al guardar detalle", e);
-        throw new DatabaseException("Error al guardar detalle: " + e.getMessage());
+        logger.error("Error al eliminar recepción con transacción", e);
+        throw new DatabaseException("Error al eliminar recepción: " + e.getMessage());
+        
+    } finally {
+        // Restaurar autoCommit y cerrar conexión
+        if (conn != null) {
+            try {
+                conn.setAutoCommit(true);
+                conn.close();
+            } catch (SQLException ex) {
+                logger.error("Error al cerrar conexión", ex);
+            }
+        }
     }
-}
+        }
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     @Override
@@ -600,68 +652,24 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     @Override
     public void deleteAllDetalles(Long recepcionId) throws DatabaseException {
-    logger.debug("Eliminando todos los detalles de la recepción ID: {}", recepcionId);
-    
-    // Primero verificar si la recepción está en un estado que permite eliminar detalles
-    String checkSql = "SELECT estado FROM recepciones_mercancia WHERE id = ?";
-    String deleteSql = "DELETE FROM detalle_recepcion WHERE recepcion_id = ?";
-    
-    Connection conn = null;
-    try {
-        conn = DatabaseConfig.getConnection();
-        conn.setAutoCommit(false);
-
-        // Verificar estado
-        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-            checkStmt.setLong(1, recepcionId);
-            ResultSet rs = checkStmt.executeQuery();
-            
-            if (!rs.next()) {
-                throw new ValidationException("recepcionId", "La recepción no existe");
-            }
-            
-            String estado = rs.getString("estado");
-            if (!"PENDIENTE".equals(estado)) {
-                throw new ValidationException("estado", 
-                    "Solo se pueden eliminar detalles de recepciones pendientes");
-            }
-        }
-
-        // Eliminar detalles
-        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
-            deleteStmt.setLong(1, recepcionId);
-            int deletedRows = deleteStmt.executeUpdate();
-            logger.info("Se eliminaron {} detalles de la recepción {}", 
-                deletedRows, recepcionId);
-        }
-
-        // Actualizar total de la recepción
-        actualizarTotalRecepcion(recepcionId, conn);
-
-        conn.commit();
-
-    } catch (SQLException | ValidationException e) {
-        if (conn != null) {
-            try {
-                conn.rollback();
-            } catch (SQLException ex) {
-                logger.error("Error al realizar rollback", ex);
-            }
-        }
-        logger.error("Error al eliminar detalles", e);
-        throw new DatabaseException("Error al eliminar detalles: " + e.getMessage());
-    } finally {
-        if (conn != null) {
-            try {
-                conn.setAutoCommit(true);
-                conn.close();
-            } catch (SQLException e) {
-                logger.error("Error al cerrar conexión", e);
-            }
+        String sql = "DELETE FROM detalle_recepcion WHERE recepcion_id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, recepcionId);
+            stmt.executeUpdate();
+            logger.debug("Detalles de la recepción {} eliminados", recepcionId);
+        } catch (SQLException e) {
+            logger.error("Error al eliminar detalles de recepción", e);
+            throw new DatabaseException("Error al eliminar detalles: " + e.getMessage());
         }
     }
-}
+    
+    
 
+    
+    
+    
+    
     @Override
     public void copyDetalles(Long recepcionOrigenId, Long recepcionDestinoId) 
         throws DatabaseException {
@@ -1066,36 +1074,56 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     @Override
     public void updateDetalle(DetalleRecepcion detalle) throws DatabaseException {
-    String sql = "UPDATE detalle_recepcion " +
-                "SET cantidad_recibida = ?, " +
-                "precio_unitario = ?, " +
+        logger.debug("Iniciando actualización de detalle. ID: {}, Estado: {}", 
+        detalle.getId(), 
+        detalle.getEstado());
+
+    String sql = "UPDATE detalle_recepcion SET " +
+                "cantidad_recibida = ?, " +
                 "estado = ?, " +
-                "observaciones = ?, " +
-                "fecha_modificacion = CURRENT_TIMESTAMP " +
+                "observaciones = ? " +
                 "WHERE id = ?";
 
     try (Connection conn = DatabaseConfig.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+        // Establecer cantidad recibida
         stmt.setInt(1, detalle.getCantidadRecibida());
-        stmt.setDouble(2, detalle.getPrecioUnitario());
-        stmt.setString(3, detalle.getEstado().name());
-        stmt.setString(4, detalle.getObservaciones());
-        stmt.setLong(5, detalle.getId());
 
-        int affectedRows = stmt.executeUpdate();
-        if (affectedRows == 0) {
-            throw new DatabaseException("No se pudo actualizar el detalle");
+        // Establecer estado (usar toString del enum que devuelve el name())
+        stmt.setString(2, detalle.getEstado().toString());
+
+        // Establecer observaciones (puede ser null)
+        if (detalle.getObservaciones() != null && !detalle.getObservaciones().trim().isEmpty()) {
+            stmt.setString(3, detalle.getObservaciones().trim());
+        } else {
+            stmt.setNull(3, Types.VARCHAR);
         }
 
-        // Actualizar el total de la recepción
-        actualizarTotalRecepcion(detalle.getRecepcion().getId(), conn);
+        // Establecer ID
+        stmt.setLong(4, detalle.getId());
+
+        // Ejecutar la actualización
+        int affectedRows = stmt.executeUpdate();
         
+        // Verificar resultado
+        if (affectedRows == 0) {
+            throw new DatabaseException("No se encontró el detalle con ID: " + detalle.getId());
+        }
+
+        logger.debug("Detalle actualizado exitosamente. ID: {}", detalle.getId());
+
     } catch (SQLException e) {
-        logger.error("Error al actualizar detalle", e);
+        logger.error("Error SQL al actualizar detalle: {}", e.getMessage());
         throw new DatabaseException("Error al actualizar detalle: " + e.getMessage());
     }
 }
+    
+    
+    
+    
+    
+    
     
     @Override
     public void deleteDetalle(Long detalleId) throws DatabaseException {
@@ -1180,20 +1208,6 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
         throw new DatabaseException("Error al obtener total recibido: " + e.getMessage());
     }
 }
-    
-    
-    
-    
-    
-
-
-    
-    
-    
-    
-    
-    
-    
     
     // Estadísticas generales
     private Map<String, Object> getEstadisticasGenerales(Connection conn, 
@@ -1388,18 +1402,6 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     // Método auxiliar para actualizar el total de la recepción
     private void actualizarTotalRecepcion(Long recepcionId, Connection conn) throws SQLException {
     String sql = "UPDATE recepciones_mercancia rm " +
@@ -1532,50 +1534,90 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
    
 
     private RecepcionMercancia mapResultSetToRecepcion(ResultSet rs) throws SQLException {
-        RecepcionMercancia recepcion = new RecepcionMercancia();
-        recepcion.setId(rs.getLong("id"));
-        recepcion.setNumeroRecepcion(rs.getString("numero_recepcion"));
-        recepcion.setFechaRecepcion(rs.getTimestamp("fecha_recepcion").toLocalDateTime());
-        recepcion.setProveedor(rs.getString("proveedor_id"));
-        recepcion.setNumeroOrdenCompra(rs.getString("numero_orden_compra"));
-        recepcion.setEstado(RecepcionMercancia.EstadoRecepcion.valueOf(rs.getString("estado")));
-        recepcion.setObservaciones(rs.getString("observaciones"));
-        
-        Timestamp fechaVerif = rs.getTimestamp("fecha_verificacion");
-        if (fechaVerif != null) {
-            recepcion.setFechaVerificacion(fechaVerif.toLocalDateTime());
-        }
-        
-        
-        Timestamp fechaFin = rs.getTimestamp("fecha_finalizacion");
-        if (fechaFin != null) {
-            recepcion.setFechaFinalizacion(fechaFin.toLocalDateTime());
-        }
-        
-        return recepcion;
+         RecepcionMercancia recepcion = new RecepcionMercancia();
+    recepcion.setId(rs.getLong("id"));
+    recepcion.setNumeroRecepcion(rs.getString("numero_recepcion"));
+    recepcion.setFechaRecepcion(rs.getTimestamp("fecha_recepcion").toLocalDateTime());
+    recepcion.setProveedor(rs.getString("proveedor_id"));
+    recepcion.setNumeroOrdenCompra(rs.getString("numero_orden_compra"));
+    recepcion.setEstado(EstadoRecepcion.valueOf(rs.getString("estado")));
+    recepcion.setObservaciones(rs.getString("observaciones"));
+    
+    // Guardar también el nombre del proveedor si está disponible
+    String proveedorNombre = rs.getString("proveedor_nombre");
+    if (proveedorNombre != null) {
+        recepcion.setProveedorNombre(proveedorNombre);  // Necesitarás agregar este campo a la clase RecepcionMercancia
+    }
+    
+    return recepcion;
     }
 
     // Métodos específicos para la gestión de recepciones
     public List<DetalleRecepcion> findDetallesByRecepcionId(Long recepcionId) throws DatabaseException {
-        String sql = "SELECT * FROM detalle_recepcion WHERE recepcion_id = ?";
-        List<DetalleRecepcion> detalles = new ArrayList<>();
-
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setLong(1, recepcionId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    detalles.add(mapResultSetToDetalle(rs));
+        String sql = "SELECT dr.*, " +
+                "p.id as producto_id, p.codigo as producto_codigo, " +
+                "p.nombre as producto_nombre, p.unidad_medida, " +
+                "p.precio_unitario as producto_precio " +
+                "FROM detalle_recepcion dr " +
+                "INNER JOIN productos p ON dr.producto_id = p.id " +
+                "WHERE dr.recepcion_id = ? " +
+                "ORDER BY p.codigo";
+                
+    List<DetalleRecepcion> detalles = new ArrayList<>();
+    try (Connection conn = DatabaseConfig.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+         
+        stmt.setLong(1, recepcionId);
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                DetalleRecepcion detalle = new DetalleRecepcion();
+                detalle.setId(rs.getLong("id"));
+                
+                // Crear y configurar el producto
+                Producto producto = new Producto();
+                producto.setId(rs.getLong("producto_id"));
+                producto.setCodigo(rs.getString("producto_codigo"));
+                producto.setNombre(rs.getString("producto_nombre"));
+                producto.setUnidadMedida(rs.getString("unidad_medida"));
+                producto.setPrecioUnitario(rs.getDouble("precio_unitario"));
+                
+                detalle.setProducto(producto);
+                detalle.setCantidadEsperada(rs.getInt("cantidad_esperada"));
+                
+                // Manejar cantidad_recibida que puede ser null
+                Object cantidadRecibida = rs.getObject("cantidad_recibida");
+                if (cantidadRecibida != null) {
+                    detalle.setCantidadRecibida(rs.getInt("cantidad_recibida"));
                 }
+                
+                detalle.setPrecioUnitario(rs.getDouble("precio_unitario"));
+                
+                // Obtener observaciones (puede ser null)
+                String observaciones = rs.getString("observaciones");
+                if (observaciones != null) {
+                    detalle.setObservaciones(observaciones);
+                }
+                
+                // Establecer estado
+                String estadoStr = rs.getString("estado");
+                if (estadoStr != null) {
+                    detalle.setEstado(DetalleRecepcion.EstadoDetalle.valueOf(estadoStr));
+                }
+                
+                detalles.add(detalle);
+                logger.debug("Detalle cargado - ID: {}, Producto: {}, Cantidad Esp: {}, Cantidad Rec: {}", 
+                    detalle.getId(), 
+                    producto.getCodigo(), 
+                    detalle.getCantidadEsperada(),
+                    detalle.getCantidadRecibida());
             }
-
-            return detalles;
-        } catch (SQLException e) {
-            logger.error("Error finding reception details", e);
-            throw new DatabaseException("Error finding reception details: " + e.getMessage());
         }
+        
+        return detalles;
+    } catch (SQLException e) {
+        logger.error("Error al obtener detalles de recepción: {}", e.getMessage());
+        throw new DatabaseException("Error al obtener detalles: " + e.getMessage());
+    }
     }
 
     private DetalleRecepcion mapResultSetToDetalle(ResultSet rs) throws SQLException {
@@ -1761,11 +1803,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
         throw new DatabaseException("Error al buscar recepciones: " + e.getMessage());
     }
 }
-    
-    
-    
-    
-    
+              
     
     // Método adicional para búsqueda por fecha específica
     public List<RecepcionMercancia> findByFechaExacta(LocalDateTime fecha) throws DatabaseException {
@@ -1815,5 +1853,20 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
         throw new DatabaseException("Error al obtener estadísticas por fechas: " + e.getMessage());
     }
         }
+    
+     @Override
+    public void eliminar(Long id) throws DatabaseException {
+        try {
+            deleteWithTransaction(id);
+        } catch (Exception e) {
+            logger.error("Error al eliminar recepción", e);
+            throw new DatabaseException("Error al eliminar recepción: " + e.getMessage());
+        }
+    }
+    
+     
+    
+
+    
 
 }

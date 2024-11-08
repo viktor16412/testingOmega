@@ -108,4 +108,19 @@ public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, 
     List<RecepcionMercancia> findByFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin) 
         throws DatabaseException;
     
+    void eliminar(Long id) throws DatabaseException;
+    
+    void delete(Long id) throws DatabaseException;
+    
+    void deleteWithTransaction(Long id) throws DatabaseException;
+    
+    RecepcionMercancia save(RecepcionMercancia recepcion) throws DatabaseException;
+    Optional<RecepcionMercancia> findById(Long id) throws DatabaseException;
+    List<RecepcionMercancia> findAll() throws DatabaseException;
+    void update(RecepcionMercancia recepcion) throws DatabaseException;
+    
+    
+
+    
+    
 }

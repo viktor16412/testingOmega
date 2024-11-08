@@ -371,10 +371,5 @@ public class UsuarioController {
             return new ArrayList<>();
         }
         return rolService.obtenerPermisos(usuarioActual.getRol().getId());
-    }
-    
-    
-    
-    
-    
+    }            
 }

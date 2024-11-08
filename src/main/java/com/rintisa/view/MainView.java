@@ -5,17 +5,20 @@ import com.rintisa.controller.RecepcionMercanciaController;
 import com.rintisa.controller.UsuarioController;
 import com.rintisa.controller.RolController;
 import com.rintisa.dao.impl.ProductoDao;
+import com.rintisa.dao.impl.ProveedorDao;
 import com.rintisa.dao.impl.RecepcionMercanciaDao;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
 import com.rintisa.service.impl.ProductoService;
+import com.rintisa.service.impl.ProveedorService;
 import com.rintisa.service.impl.RecepcionMercanciaService;
 
 
 import com.rintisa.service.interfaces.IUsuarioService;
 import com.rintisa.service.interfaces.IRolService;
 import com.rintisa.service.interfaces.IProductoService;
+import com.rintisa.service.interfaces.IProveedorService;
 import com.rintisa.service.interfaces.IRecepcionMercanciaService;
 
 import com.rintisa.util.SwingUtils;
@@ -38,8 +41,7 @@ public class MainView extends JFrame {
     
     // Controladores
     private final UsuarioController userController;
-    
-    
+   
     private final RolController rolController;
     private final IUsuarioService usuarioService;
     private final IRolService rolService;
@@ -86,6 +88,7 @@ public class MainView extends JFrame {
         
          // Inicializar DAOs
         ProductoDao productoDao = new ProductoDao();
+        ProveedorDao proveedorDao = new ProveedorDao();
         RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
         
         // Inicializar Servicios
@@ -597,40 +600,46 @@ public class MainView extends JFrame {
 }
 
     private void mostrarRecepcionMercancia() {
-    if (!tieneRolAlmacen(usuarioActual)) {
-        JOptionPane.showMessageDialog(this,
-            "No tiene permisos para acceder a esta función",
-            "Acceso Denegado",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
     try {
-        // Limpiar panel de contenido
-        contentPanel.removeAll();
-        
-        // Crear y agregar la vista de recepción
-        RecepcionMercanciaView recepcionView = new RecepcionMercanciaView(
-            new RecepcionMercanciaController(
+            // Inicializar los DAOs necesarios
+            ProveedorDao proveedorDao = new ProveedorDao();
+            ProductoDao productoDao = new ProductoDao();
+            RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
+
+            // Inicializar los Servicios
+            IProveedorService proveedorService = new ProveedorService(proveedorDao);
+            IProductoService productoService = new ProductoService(productoDao);
+            IRecepcionMercanciaService recepcionService = new RecepcionMercanciaService(recepcionDao, productoDao);
+
+            // Crear el controlador
+            RecepcionMercanciaController controller = new RecepcionMercanciaController(
                 recepcionService,
                 productoService,
+                proveedorService,
                 userController
-            )
-        );
-        contentPanel.add(recepcionView, BorderLayout.CENTER);
-        
-        // Actualizar la interfaz
-        contentPanel.revalidate();
-        contentPanel.repaint();
-        
-        logger.info("Panel de recepción de mercancía mostrado");
-    } catch (Exception e) {
-        logger.error("Error al mostrar recepción de mercancía", e);
-        JOptionPane.showMessageDialog(this,
-            "Error al abrir la recepción de mercancía: " + e.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
-    }
+            );
+
+            // Crear la vista
+            RecepcionMercanciaView vista = new RecepcionMercanciaView(controller);
+
+            // Limpiar y mostrar la nueva vista
+            contentPanel.removeAll();
+            contentPanel.add(vista);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+
+            // Actualizar el título de la ventana
+            setTitle("RINTISA - Recepción de Mercancía");
+
+        } catch (Exception e) {
+            logger.error("Error al mostrar la vista de Recepción de Mercancía", e);
+            JOptionPane.showMessageDialog(
+                this,
+                "Error al abrir la vista de Recepción de Mercancía: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
 }
     
     

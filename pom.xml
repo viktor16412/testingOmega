@@ -157,6 +157,13 @@
         <version>3.2</version>
         </dependency>   
         
+         <!-- JDateChooser -->
+        <dependency>
+        <groupId>com.toedter</groupId>
+        <artifactId>jcalendar</artifactId>
+        <version>1.4</version>
+        </dependency>
+        
         
         
         <!-- <dependency>

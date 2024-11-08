@@ -14,6 +14,7 @@ public class RecepcionMercancia {
     private String observaciones;
     private LocalDateTime fechaVerificacion;
     private LocalDateTime fechaFinalizacion;
+    private String proveedorNombre;
     
     public enum EstadoRecepcion {
         PENDIENTE("Pendiente"),
@@ -68,5 +69,35 @@ public class RecepcionMercancia {
     public LocalDateTime getFechaFinalizacion() { return fechaFinalizacion; }
     public void setFechaFinalizacion(LocalDateTime fechaFinalizacion) { this.fechaFinalizacion = fechaFinalizacion; }
     
+     public String getProveedorNombre() {
+        return proveedorNombre;
+    }
+
+    public void setProveedorNombre(String proveedorNombre) {
+        this.proveedorNombre = proveedorNombre;
+    }
+
+    // Modificar el método getProveedor para que use el nombre si está disponible
+    public String getProveedorDisplay() {
+        return proveedorNombre != null ? proveedorNombre : proveedor;
+    }
     
+    // Método para clonar una recepción
+    public RecepcionMercancia clone() {
+        RecepcionMercancia clone = new RecepcionMercancia();
+        clone.setId(this.id);
+        clone.setNumeroRecepcion(this.numeroRecepcion);
+        clone.setFechaRecepcion(this.fechaRecepcion);
+        clone.setProveedor(this.proveedor);
+        clone.setNumeroOrdenCompra(this.numeroOrdenCompra);
+        clone.setEstado(this.estado);
+        clone.setObservaciones(this.observaciones);
+        clone.setFechaVerificacion(this.fechaVerificacion);
+        clone.setFechaFinalizacion(this.fechaFinalizacion);
+        clone.setResponsable(this.responsable);
+        clone.setProveedorNombre(this.proveedorNombre);
+        return clone;
+    }
+    
+     
 }

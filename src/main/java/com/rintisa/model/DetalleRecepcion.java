@@ -16,6 +16,7 @@ public class DetalleRecepcion {
     
     public enum EstadoDetalle {
         PENDIENTE("Pendiente"),
+        VERIFICADO("Verificado"),
         ACEPTADO("Aceptado"),
         RECHAZADO("Rechazado");
         
@@ -99,4 +100,5 @@ public class DetalleRecepcion {
                 ", estado=" + estado +
                 '}';
     }
+    
 }

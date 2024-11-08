@@ -1,13 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
+
 package com.rintisa.service.interfaces;
 
+import static com.mysql.cj.conf.PropertyKey.logger;
 import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.model.DetalleRecepcion;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
+import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,19 +21,9 @@ public interface IRecepcionMercanciaService {
      */
     RecepcionMercancia crear(RecepcionMercancia recepcion) throws DatabaseException, ValidationException;
 
-    /**
-     * Actualiza una recepción existente
-     * @param recepcion La recepción con los datos actualizados
-     */
     void actualizar(RecepcionMercancia recepcion) throws DatabaseException, ValidationException;
 
-    /**
-     * Verifica una recepción
-     * @param recepcionId ID de la recepción a verificar
-     * @param observaciones Observaciones de la verificación
-     */
-    void verificarRecepcion(Long recepcionId, String observaciones) 
-        throws DatabaseException, ValidationException;
+    
 
     /**
      * Acepta una recepción y actualiza el inventario
@@ -170,4 +159,25 @@ public interface IRecepcionMercanciaService {
         throws DatabaseException {
         throw new UnsupportedOperationException("Notificación de cambios no implementada");
     }
+    
+    
+    
+    
+    
+     /**
+     * Elimina una recepción y sus detalles
+     * @param id ID de la recepción a eliminar
+     * @throws DatabaseException si ocurre un error en la base de datos
+     * @throws ValidationException si la recepción no existe o no está en estado PENDIENTE
+     */
+     void eliminar(Long id) throws DatabaseException, ValidationException;
+    
+    
+    void verificarRecepcion(Long recepcionId, Map<Long, Integer> cantidadesRecibidas, String observaciones) 
+        throws DatabaseException, ValidationException;
+    
+    void verificarRecepcion(Long recepcionId, String observaciones) 
+        throws DatabaseException, ValidationException;
+
+    
 }
