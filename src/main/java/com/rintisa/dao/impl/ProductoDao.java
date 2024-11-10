@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ProductoDao implements IProductoDao {
@@ -188,6 +189,116 @@ public class ProductoDao implements IProductoDao {
             throw new DatabaseException("Error finding products by active status: " + e.getMessage());
         }
     }
+    
+    
+    @Override
+    public List<Producto> buscar(String criterio) throws DatabaseException {
+        String sql = "SELECT * FROM productos WHERE " +
+                    "(codigo LIKE ? OR " +
+                    "nombre LIKE ? OR " +
+                    "descripcion LIKE ? OR " +
+                    "unidad_medida LIKE ?) " +
+                    "AND activo = true " +
+                    "ORDER BY codigo";
+
+        List<Producto> productos = new ArrayList<>();
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            String criterioLike = "%" + criterio.trim() + "%";
+            
+            // Establecer el criterio para cada campo de búsqueda
+            stmt.setString(1, criterioLike);
+            stmt.setString(2, criterioLike);
+            stmt.setString(3, criterioLike);
+            stmt.setString(4, criterioLike);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    productos.add(mapResultSetToProduct(rs));
+                }
+            }
+            
+            logger.debug("Búsqueda de productos con criterio '{}' encontró {} resultados", 
+                criterio, productos.size());
+                
+            return productos;
+            
+        } catch (SQLException e) {
+            logger.error("Error al buscar productos con criterio: {}", criterio, e);
+            throw new DatabaseException("Error al buscar productos: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Producto> buscarPorFiltros(Map<String, Object> filtros) throws DatabaseException {
+        StringBuilder sql = new StringBuilder("SELECT * FROM productos WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        
+        // Construir la consulta según los filtros proporcionados
+        if (filtros.containsKey("codigo")) {
+            sql.append(" AND codigo LIKE ?");
+            params.add("%" + filtros.get("codigo") + "%");
+        }
+        
+        if (filtros.containsKey("nombre")) {
+            sql.append(" AND nombre LIKE ?");
+            params.add("%" + filtros.get("nombre") + "%");
+        }
+        
+        if (filtros.containsKey("unidadMedida")) {
+            sql.append(" AND unidad_medida = ?");
+            params.add(filtros.get("unidadMedida"));
+        }
+        
+        if (filtros.containsKey("precioMinimo")) {
+            sql.append(" AND precio_unitario >= ?");
+            params.add(filtros.get("precioMinimo"));
+        }
+        
+        if (filtros.containsKey("precioMaximo")) {
+            sql.append(" AND precio_unitario <= ?");
+            params.add(filtros.get("precioMaximo"));
+        }
+        
+        if (filtros.containsKey("stockBajo")) {
+            sql.append(" AND stock_actual <= stock_minimo");
+        }
+        
+        if (filtros.containsKey("activo")) {
+            sql.append(" AND activo = ?");
+            params.add(filtros.get("activo"));
+        }
+        
+        sql.append(" ORDER BY codigo");
+        
+        List<Producto> productos = new ArrayList<>();
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            
+            // Establecer los parámetros
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    productos.add(mapResultSetToProduct(rs));
+                }
+            }
+            
+            logger.debug("Búsqueda por filtros encontró {} productos", productos.size());
+            
+            return productos;
+            
+        } catch (SQLException e) {
+            logger.error("Error al buscar productos con filtros", e);
+            throw new DatabaseException("Error al buscar productos: " + e.getMessage());
+        }
+    }
+    
 
     private Producto mapResultSetToProduct(ResultSet rs) throws SQLException {
         Producto producto = new Producto();

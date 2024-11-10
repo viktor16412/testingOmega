@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
@@ -243,6 +244,93 @@ public class ProductoService implements IProductoService {
     public List<Producto> buscar(String criterio) throws DatabaseException {
         // Implementar búsqueda por criterios
         // TODO: Implementar búsqueda personalizada
-        return new ArrayList<>();
+        //return new ArrayList<>();
+        try {
+            if (criterio == null || criterio.trim().isEmpty()) {
+                return listarTodos();
+            }
+            
+            return productoDao.buscar(criterio.trim());
+            
+        } catch (DatabaseException e) {
+            logger.error("Error al buscar productos con criterio: {}", criterio, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error inesperado al buscar productos", e);
+            throw new DatabaseException("Error al buscar productos: " + e.getMessage());
+        }
     }
+    
+      public List<Producto> buscarPorFiltros(Map<String, Object> filtros) throws DatabaseException {
+        try {
+            if (filtros == null || filtros.isEmpty()) {
+                return listarTodos();
+            }
+
+            // Validar valores de los filtros
+            validarFiltros(filtros);
+            
+            return productoDao.buscarPorFiltros(filtros);
+            
+        } catch (DatabaseException e) {
+            logger.error("Error al buscar productos con filtros", e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error inesperado al buscar productos", e);
+            throw new DatabaseException("Error al buscar productos: " + e.getMessage());
+        }
+    }
+
+    private void validarFiltros(Map<String, Object> filtros) throws ValidationException {
+        for (Map.Entry<String, Object> entry : filtros.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            
+            switch (key) {
+                case "precioMinimo":
+                case "precioMaximo":
+                    if (value != null) {
+                        try {
+                            double precio = Double.parseDouble(value.toString());
+                            if (precio < 0) {
+                                throw new ValidationException("precio",
+                                    "El precio no puede ser negativo");
+                            }
+                        } catch (NumberFormatException e) {
+                            throw new ValidationException("precio",
+                                "El precio debe ser un número válido");
+                        }
+                    }
+                    break;
+                    
+                case "stockBajo":
+                    if (value != null && !(value instanceof Boolean)) {
+                        throw new ValidationException("stockBajo",
+                            "El valor de stock bajo debe ser booleano");
+                    }
+                    break;
+                    
+                case "activo":
+                    if (value != null && !(value instanceof Boolean)) {
+                        throw new ValidationException("activo",
+                            "El valor de activo debe ser booleano");
+                    }
+                    break;
+            }
+        }
+        
+        // Validar que precioMinimo no sea mayor que precioMaximo
+        if (filtros.containsKey("precioMinimo") && filtros.containsKey("precioMaximo")) {
+            double min = Double.parseDouble(filtros.get("precioMinimo").toString());
+            double max = Double.parseDouble(filtros.get("precioMaximo").toString());
+            if (min > max) {
+                throw new ValidationException("precio",
+                    "El precio mínimo no puede ser mayor que el precio máximo");
+            }
+        }
+    }
+    
+    
+    
+    
 }

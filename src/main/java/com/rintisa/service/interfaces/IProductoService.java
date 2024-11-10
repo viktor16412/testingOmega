@@ -5,6 +5,7 @@ import com.rintisa.model.Producto;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface IProductoService {
@@ -73,4 +74,7 @@ public interface IProductoService {
      * Valida los datos de un producto
      */
     void validar(Producto producto) throws ValidationException;
+    
+    List<Producto> buscarPorFiltros(Map<String, Object> filtros) 
+            throws DatabaseException, ValidationException;
 }

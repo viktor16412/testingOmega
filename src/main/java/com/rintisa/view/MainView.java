@@ -1,6 +1,7 @@
 
 package com.rintisa.view;
 
+import com.rintisa.controller.ProductoController;
 import com.rintisa.controller.RecepcionMercanciaController;
 import com.rintisa.controller.UsuarioController;
 import com.rintisa.controller.RolController;
@@ -193,7 +194,7 @@ public class MainView extends JFrame {
         menuArchivo.addSeparator();
         menuArchivo.add(menuSalir);
         
-        // Menú Administración
+        // Menú Administración(solo para administradores)
         menuAdministracion = new JMenu("Administración");
         menuAdministracion.setMnemonic(KeyEvent.VK_D);
         
@@ -214,40 +215,22 @@ public class MainView extends JFrame {
 
         
         // El menú de administración solo es visible para administradores
-        menuAdministracion.setVisible(userController.esAdministrador(usuarioActual));
+        //menuAdministracion.setVisible(userController.esAdministrador(usuarioActual));
+        boolean esAdmin = userController.esAdministrador(usuarioActual);
+        menuAdministracion.setVisible(esAdmin);
         
         // Menú Reportes
         menuReportes = new JMenu("Reportes");
         menuReportes.setMnemonic(KeyEvent.VK_R);
         
+    // Reportes de Administración (solo para admin)
+         if (esAdmin) {
         JMenuItem menuReporteUsuarios = new JMenuItem("Reporte de Usuarios", 
             new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte usuario
         JMenuItem menuReporteRoles = new JMenuItem("Reporte de Roles", 
             new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte roles
         JMenuItem menuReporteAccesos = new JMenuItem("Reporte de Accesos", 
             new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte accesos
-        
-        // Menú Almacén
-        JMenu menuAlmacen = new JMenu("Almacén");
-        menuAlmacen.setMnemonic(KeyEvent.VK_A);
-
-        JMenuItem menuRecepcion = new JMenuItem("Recepción de Mercancía",
-            new ImageIcon(getClass().getResource("/icons/user.png")));
-        JMenuItem menuInventario = new JMenuItem("Inventario",
-            new ImageIcon(getClass().getResource("/icons/user.png")));
-        
-        menuRecepcion.addActionListener(e -> mostrarRecepcionMercancia());
-     //   menuInventario.addActionListener(e -> mostrarInventario()); //falta implementar
-
-        menuAlmacen.add(menuRecepcion);
-        menuAlmacen.add(menuInventario);
-
-        // Solo mostrar menú de almacén si el usuario tiene el rol correspondiente
-        menuAlmacen.setVisible(tieneRolAlmacen(usuarioActual));
-
-        // Agregar el menú a la barra después de menuAdministracion
-            menuBar.add(menuAlmacen);
-           
         
         menuReporteUsuarios.addActionListener(e -> generarReporteUsuarios());
         menuReporteRoles.addActionListener(e -> generarReporteRoles());
@@ -256,6 +239,61 @@ public class MainView extends JFrame {
         menuReportes.add(menuReporteUsuarios);
         menuReportes.add(menuReporteRoles);
         menuReportes.add(menuReporteAccesos);
+         }
+         
+        // Menú Almacén
+        JMenu menuAlmacen = new JMenu("Almacén");
+        menuAlmacen.setMnemonic(KeyEvent.VK_A);
+
+        JMenuItem menuRecepcion = new JMenuItem("Recepción de Mercancía",
+            new ImageIcon(getClass().getResource("/icons/user.png")));
+        menuRecepcion.addActionListener(e -> mostrarRecepcionMercancia());
+        //JMenuItem menuInventario = new JMenuItem("Inventario",
+            //new ImageIcon(getClass().getResource("/icons/user.png")));
+     //   menuInventario.addActionListener(e -> mostrarInventario()); //falta implementar
+     
+        // Mantenimiento de Productos
+        JMenuItem menuProductos = new JMenuItem("Mantenimiento de Productos",
+        new ImageIcon(getClass().getResource("/icons/user.png")));
+        menuProductos.addActionListener(e -> mostrarMantenimientoProductos());
+     
+     
+        // Reportes de Almacén (solo para rol ALMACEN)
+        if (tieneRolAlmacen(usuarioActual)) {
+        JMenu menuReportesAlmacen = new JMenu("Reportes de Almacén");
+        
+        //JMenuItem menuReporteGeneral = new JMenuItem("Reporte General de Recepciones");
+        //menuReporteGeneral.addActionListener(e -> mostrarRecepcionMercancia());
+
+        JMenuItem menuReporteProveedor = new JMenuItem("Reporte por Proveedor");
+        // menuReporteProveedor.addActionListener(e -> generarReporteProveedor());
+
+        JMenuItem menuReporteProductos = new JMenuItem("Reporte de Productos");
+        // menuReporteProductos.addActionListener(e -> generarReporteProductos());
+
+        //menuReportesAlmacen.add(menuReporteGeneral);
+        menuReportesAlmacen.add(menuReporteProveedor);
+        menuReportesAlmacen.add(menuReporteProductos);
+
+        menuAlmacen.add(menuRecepcion);
+        menuAlmacen.addSeparator();
+        menuAlmacen.add(menuReportesAlmacen);
+        menuAlmacen.addSeparator();
+        menuAlmacen.add(menuProductos);
+            }
+        
+
+        menuAlmacen.add(menuRecepcion);
+        //menuAlmacen.add(menuInventario);
+
+        // Solo mostrar menú de almacén si el usuario tiene el rol correspondiente
+        menuAlmacen.setVisible(tieneRolAlmacen(usuarioActual));
+
+        // Agregar el menú a la barra después de menuAdministracion
+            menuBar.add(menuAlmacen);
+           
+        
+       
         
         // Menú Ayuda
         menuAyuda = new JMenu("Ayuda");
@@ -485,6 +523,46 @@ public class MainView extends JFrame {
             mostrarMensajeError("Error al cargar la gestión de roles: " + e.getMessage());
         }
     }
+    
+    private void mostrarMantenimientoProductos() {
+    try {
+        // Inicializar DAOs necesarios
+        ProductoDao productoDao = new ProductoDao();
+
+        // Inicializar Servicios
+        IProductoService productoService = new ProductoService(productoDao);
+
+        // Crear el controlador
+        ProductoController controller = new ProductoController(productoService);
+
+        // Crear la vista
+        ProductosView vista = new ProductosView(controller);
+
+        // Limpiar y mostrar la nueva vista
+        contentPanel.removeAll();
+        contentPanel.add(vista);
+        contentPanel.revalidate();
+        contentPanel.repaint();
+
+        // Actualizar el título de la ventana
+        setTitle("RINTISA - Mantenimiento de Productos");
+
+    } catch (Exception e) {
+        logger.error("Error al mostrar el mantenimiento de productos", e);
+        JOptionPane.showMessageDialog(
+            this,
+            "Error al abrir el mantenimiento de productos: " + e.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
+}
+
+    
+    
+    
+    
+    
 
     // Métodos para reportes
     private void generarReporteUsuarios() {
@@ -597,7 +675,10 @@ public class MainView extends JFrame {
     private boolean tieneRolAlmacen(Usuario usuario) {
     return usuario != null && 
            usuario.getRol() != null && 
-           "ALMACEN".equalsIgnoreCase(usuario.getRol().getNombre());
+           //"ALMACEN".equalsIgnoreCase(usuario.getRol().getNombre());
+           ("ALMACEN".equalsIgnoreCase(usuario.getRol().getNombre()) ||
+            "ADMIN".equalsIgnoreCase(usuario.getRol().getNombre())); 
+            
 }
 
     private void mostrarRecepcionMercancia() {
@@ -648,10 +729,7 @@ public class MainView extends JFrame {
             );
         }
 }
-    
-    
-    
-
+       
     private void mostrarAcercaDe() {
         JOptionPane.showMessageDialog(
             this,
