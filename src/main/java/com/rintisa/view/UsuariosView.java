@@ -4,6 +4,8 @@ import com.rintisa.controller.UsuarioController;
 import com.rintisa.model.Usuario;
 import com.rintisa.model.Rol;
 import com.rintisa.util.SwingUtils;
+import com.rintisa.util.ModernUIUtils;
+import com.rintisa.util.IconManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -38,41 +40,53 @@ public class UsuariosView extends JPanel {
     }
     
     private void setupComponents() {
+        
+                 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // Panel superior con búsqueda y botones
         JPanel panelSuperior = new JPanel(new BorderLayout(5, 0));
+        panelSuperior.setOpaque(false);
         
         // Panel de búsqueda
-        JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        //JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel panelBusqueda = ModernUIUtils.createSearchPanel();
+        
         txtBuscar = new JTextField(20);
         panelBusqueda.add(new JLabel("Buscar:"));
         panelBusqueda.add(txtBuscar);
         
         // Panel de botones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnNuevo = new JButton("Nuevo");
-        btnEditar = new JButton("Editar");
-        btnEliminar = new JButton("Eliminar");
+        //btnNuevo = new JButton("Nuevo");
+        btnNuevo = ModernUIUtils.createPrimaryButton("Nuevo", "new");
+        btnEditar = ModernUIUtils.createPrimaryButton("Editar", "edit");
+        btnEliminar = ModernUIUtils.createPrimaryButton("Eliminar", "delete");
+        //btnEditar = new JButton("Editar");
+        //btnEliminar = new JButton("Eliminar");
         //btnGuardar = new JButton("Guardar");
         //btnCancelar = new JButton("Cancelar");
         
         // Configurar botones
-        SwingUtils.configurarBoton(btnNuevo, "Crear nuevo usuario", "/images/new.png");
-        SwingUtils.configurarBoton(btnEditar, "Editar usuario seleccionado", "/images/edit.png");
-        SwingUtils.configurarBoton(btnEliminar, "Eliminar usuario seleccionado", "/images/delete.png");
+        //SwingUtils.configurarBoton(btnNuevo, "Crear nuevo usuario", "/images/new.png");
+        //SwingUtils.configurarBoton(btnEditar, "Editar usuario seleccionado", "/images/edit.png");
+        //SwingUtils.configurarBoton(btnEliminar, "Eliminar usuario seleccionado", "/images/delete.png");
         //SwingUtils.configurarBoton(btnGuardar, "Guardar cambios", "/images/save.png");
         //SwingUtils.configurarBoton(btnCancelar, "Cancelar operación", "/images/cancel.png");
         
         panelBotones.add(btnNuevo);
+        panelBotones.add(Box.createHorizontalStrut(5));
         panelBotones.add(btnEditar);
+        panelBotones.add(Box.createHorizontalStrut(5));
         panelBotones.add(btnEliminar);
        // panelBotones.add(btnGuardar);
        // panelBotones.add(btnCancelar);
         
         panelSuperior.add(panelBusqueda, BorderLayout.WEST);
         panelSuperior.add(panelBotones, BorderLayout.EAST);
+        
+        panelBotones.setOpaque(false);
         
         // Tabla de usuarios
         String[] columnas = {
@@ -87,6 +101,7 @@ public class UsuariosView extends JPanel {
         
         tablaUsuarios = new JTable(modeloTabla);
         JScrollPane scrollPane = new JScrollPane(tablaUsuarios);
+        ModernUIUtils.setupModernTable(tablaUsuarios);
         
         // Agregar componentes al panel principal
         add(panelSuperior, BorderLayout.NORTH);

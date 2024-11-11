@@ -3,6 +3,7 @@ package com.rintisa.view;
 
 import com.rintisa.controller.RolController;
 import com.rintisa.model.Rol;
+import com.rintisa.util.ModernUIUtils;
 import com.rintisa.util.SwingUtils;
 
 import javax.swing.*;
@@ -57,24 +58,31 @@ public class RolesView extends JPanel {
         JPanel panelIzquierdo = new JPanel(new BorderLayout(5, 5));
         
         // Panel de búsqueda
-        JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        //JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel panelBusqueda = ModernUIUtils.createSearchPanel();
+        
         txtBuscar = new JTextField(20);
         panelBusqueda.add(new JLabel("Buscar:"));
         panelBusqueda.add(txtBuscar);
         
         // Panel de botones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        btnNuevo = new JButton("Nuevo");
-        btnEditar = new JButton("Editar");
-        btnEliminar = new JButton("Eliminar");
+        //btnNuevo = new JButton("Nuevo");
+        btnNuevo = ModernUIUtils.createPrimaryButton("Nuevo", "new");
+        btnEditar = ModernUIUtils.createPrimaryButton("Editar", "edit");
+        btnEliminar = ModernUIUtils.createPrimaryButton("Eliminar", "delete");
+        //btnEditar = new JButton("Editar");
+        //btnEliminar = new JButton("Eliminar");
         
         // Configurar botones
-        SwingUtils.configurarBoton(btnNuevo, "Crear nuevo rol", "/images/new.png");
-        SwingUtils.configurarBoton(btnEditar, "Editar rol seleccionado", "/images/edit.png");
-        SwingUtils.configurarBoton(btnEliminar, "Eliminar rol seleccionado", "/images/delete.png");
+        //SwingUtils.configurarBoton(btnNuevo, "Crear nuevo rol", "/images/new.png");
+        //SwingUtils.configurarBoton(btnEditar, "Editar rol seleccionado", "/images/edit.png");
+        //SwingUtils.configurarBoton(btnEliminar, "Eliminar rol seleccionado", "/images/delete.png");
         
         panelBotones.add(btnNuevo);
+        panelBotones.add(Box.createHorizontalStrut(5));
         panelBotones.add(btnEditar);
+        panelBotones.add(Box.createHorizontalStrut(5));
         panelBotones.add(btnEliminar);
         
         // Panel superior izquierdo
@@ -93,6 +101,7 @@ public class RolesView extends JPanel {
         
         tablaRoles = new JTable(modeloTabla);
         JScrollPane scrollPane = new JScrollPane(tablaRoles);
+        ModernUIUtils.setupModernTable(tablaRoles);
         
         // Agregar componentes al panel izquierdo
         panelIzquierdo.add(panelSupIzq, BorderLayout.NORTH);
@@ -165,11 +174,13 @@ public class RolesView extends JPanel {
         
         // Panel de botones
         JPanel panelBotonesDetalle = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnGuardar = new JButton("Guardar");
-        btnCancelar = new JButton("Cancelar");
+        //btnGuardar = new JButton("Guardar");
+        btnGuardar = ModernUIUtils.createPrimaryButton("Guardar", "save");
+        btnCancelar = ModernUIUtils.createPrimaryButton("Cancelar", "cancelar");
+        //btnCancelar = new JButton("Cancelar");
         
-        SwingUtils.configurarBoton(btnGuardar, "Guardar cambios", "/images/save.png");
-        SwingUtils.configurarBoton(btnCancelar, "Cancelar cambios", "/images/cancel.png");
+        //SwingUtils.configurarBoton(btnGuardar, "Guardar cambios", "/icons/save.png");
+        //SwingUtils.configurarBoton(btnCancelar, "Cancelar cambios", "/icons/cancel.png");
         
         panelBotonesDetalle.add(btnGuardar);
         panelBotonesDetalle.add(btnCancelar);

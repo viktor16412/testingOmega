@@ -5,6 +5,7 @@ import com.rintisa.controller.ProductoController;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.Producto;
 import com.rintisa.service.impl.ProductoTableModel;
+import com.rintisa.util.ModernUIUtils;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
@@ -17,6 +18,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -72,23 +74,31 @@ public class ProductosView extends JPanel {
     private void createComponents() {
         // Crear componentes de búsqueda
         txtBuscar = new JTextField(20);
-        btnBuscar = new JButton("Buscar");
+        //btnBuscar = new JButton("Buscar");
+        btnBuscar = ModernUIUtils.createPrimaryButton("Buscar", "search");
+        
         
         // Crear modelo y tabla
         modeloTabla = new ProductoTableModel();
         tablaProductos = new JTable(modeloTabla);
         
+        
         // Crear botones
-        btnNuevo = new JButton("Nuevo");
-        btnEditar = new JButton("Editar");
-        btnEliminar = new JButton("Eliminar");
-        btnReporte = new JButton("Generar Reporte");
+        //btnNuevo = new JButton("Nuevo");
+        btnNuevo = ModernUIUtils.createPrimaryButton("Nuevo", "new");
+        btnEditar = ModernUIUtils.createPrimaryButton("Editar", "edit");
+        btnEliminar = ModernUIUtils.createPrimaryButton("Eliminar", "delete");
+        //btnEditar = new JButton("Editar");
+        //btnEliminar = new JButton("Eliminar");
+        //btnReporte = new JButton("Generar Reporte");
+        btnReporte = ModernUIUtils.createPrimaryButton("Reporte", "report");
     }
 
     private void setupComponents() {
         // Configurar tabla
         tablaProductos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tablaProductos.setAutoCreateRowSorter(true);
+         ModernUIUtils.setupModernTable(tablaProductos);
         
         // Configurar renderers para la tabla
         DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
@@ -99,9 +109,9 @@ public class ProductosView extends JPanel {
         tablaProductos.getColumnModel().getColumn(5).setCellRenderer(rightRenderer); // Stock
         
         // Configurar botones
-        btnNuevo.setIcon(new ImageIcon(getClass().getResource("/icons/user.png")));
-        btnEditar.setIcon(new ImageIcon(getClass().getResource("/icons/key.png")));
-        btnEliminar.setIcon(new ImageIcon(getClass().getResource("/icons/cancel.png")));
+       // btnNuevo.setIcon(new ImageIcon(getClass().getResource("/icons/user.png")));
+        //btnEditar.setIcon(new ImageIcon(getClass().getResource("/icons/key.png")));
+        //btnEliminar.setIcon(new ImageIcon(getClass().getResource("/icons/cancel.png")));
     }
 
     private void layoutComponents() {
@@ -110,14 +120,18 @@ public class ProductosView extends JPanel {
 
         // Panel de búsqueda
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        //JPanel searchPanel = ModernUIUtils.createSearchPanel();
         searchPanel.add(new JLabel("Buscar:"));
         searchPanel.add(txtBuscar);
+        //txtBuscar = new JTextField(20);
         searchPanel.add(btnBuscar);
 
         // Panel de botones
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel.add(btnNuevo);
+        buttonPanel.add(Box.createHorizontalStrut(5));
         buttonPanel.add(btnEditar);
+        buttonPanel.add(Box.createHorizontalStrut(5));
         buttonPanel.add(btnEliminar);
         buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
         buttonPanel.add(btnReporte);

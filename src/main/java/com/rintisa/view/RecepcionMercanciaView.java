@@ -9,6 +9,7 @@ import com.rintisa.model.Producto;
 import com.rintisa.model.Proveedor;
 import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
 import com.rintisa.model.Usuario;
+import com.rintisa.util.ModernUIUtils;
 import com.rintisa.util.SwingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -223,25 +224,36 @@ public class RecepcionMercanciaView extends JPanel {
         cmbEstado = new JComboBox<>(EstadoRecepcion.values());
         txtNumeroRecepcion = new JTextField(10);
         txtOrdenCompra = new JTextField(10);
-        btnFiltrar = new JButton("Buscar");
-        btnLimpiarFiltros = new JButton("Limpiar");
+        //btnFiltrar = new JButton("Buscar");
+        btnFiltrar = ModernUIUtils.createPrimaryButton("Buscar", "search");
+        //btnLimpiarFiltros = new JButton("Limpiar");
+        btnLimpiarFiltros = ModernUIUtils.createPrimaryButton("Limpiar", "limpiar");
         
           // Crear botones de acción
-        btnNuevo = new JButton("Nuevo");
-        btnEditar = new JButton("Editar");
-        btnVerificar = new JButton("Verificar");
-        btnAceptar = new JButton("Aceptar");
-        btnRechazar = new JButton("Rechazar");
-        btnEliminar = new JButton("Eliminar");
+       // btnNuevo = new JButton("Nuevo");
+         btnNuevo = ModernUIUtils.createPrimaryButton("Nuevo", "new");
+        //btnEditar = new JButton("Editar");
+        btnEditar = ModernUIUtils.createPrimaryButton("Editar", "edit");
+        //btnVerificar = new JButton("Verificar");
+        btnVerificar = ModernUIUtils.createPrimaryButton("Verficar", "verificar");
+        //btnAceptar = new JButton("Aceptar");
+        btnAceptar = ModernUIUtils.createPrimaryButton("Aceptar", "check");
+        //btnRechazar = new JButton("Rechazar");
+        btnRechazar = ModernUIUtils.createPrimaryButton("Rechazar", "rechazar");
+        //btnEliminar = new JButton("Eliminar");
+        btnEliminar = ModernUIUtils.createPrimaryButton("Eliminar", "delete");
         
-        btnReporte = new JButton("Reporte General");
+        //btnReporte = new JButton("Reporte General");
+        btnReporte = ModernUIUtils.createPrimaryButton("Reporte", "report");
         btnReporte.setToolTipText("Generar reporte general de recepciones");
 
         // Crear la tabla
         tablaRecepciones = new JTable(modeloTabla);
+        ModernUIUtils.setupModernTable(tablaRecepciones);
         
         // Crear el scroll pane
         scrollPane = new JScrollPane(tablaRecepciones);
+         
     }
 
     private void setupComponents() {

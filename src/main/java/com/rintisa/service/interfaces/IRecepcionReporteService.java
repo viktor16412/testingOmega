@@ -8,10 +8,6 @@ public interface IRecepcionReporteService {
     byte[] generarReporteGeneral(LocalDateTime fechaInicio, LocalDateTime fechaFin) 
         throws ReportException;
     
-    
-    
-    
-    
   // Tipos de períodos para reportes
     enum TipoPeriodo {
         DIARIO,
