@@ -15,7 +15,7 @@ import com.rintisa.service.impl.ProductoService;
 import com.rintisa.service.impl.ProveedorService;
 import com.rintisa.service.impl.RecepcionMercanciaService;
 import com.rintisa.service.impl.RecepcionReporteService;
-
+import com.rintisa.controller.ProductoController;
 
 import com.rintisa.service.interfaces.IUsuarioService;
 import com.rintisa.service.interfaces.IRolService;
@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -607,6 +609,13 @@ public class MainView extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
+    
+    
+    
+    
+    
+    
+    
 
     // Métodos de utilidad
     private void actualizarStatusBar() {

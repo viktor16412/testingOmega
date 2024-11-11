@@ -5,6 +5,7 @@ import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.service.interfaces.IRecepcionMercanciaService;
 import com.rintisa.service.interfaces.IRecepcionReporteService;
 import com.rintisa.exception.ReportException;
+import com.rintisa.service.interfaces.IProductoService;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -18,14 +19,14 @@ import org.slf4j.LoggerFactory;
 
 public class RecepcionReporteService implements IRecepcionReporteService {
     
-    private final IRecepcionMercanciaService recepcionService;
+    private final IRecepcionMercanciaService recepcionService;   
     private static final Logger logger = LoggerFactory.getLogger(RecepcionReporteService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-
+      
     public RecepcionReporteService(IRecepcionMercanciaService recepcionService) {
         this.recepcionService = recepcionService;
     }
-
+    
     @Override
     public byte[] generarReporteGeneral(LocalDateTime fechaInicio, LocalDateTime fechaFin) 
             throws ReportException {

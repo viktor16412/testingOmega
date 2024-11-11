@@ -13,23 +13,30 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +58,7 @@ public class ProductosView extends JPanel {
     private JButton btnNuevo;
     private JButton btnEditar;
     private JButton btnEliminar;
+    private JButton btnReporte;
 
     public ProductosView(ProductoController controller) {
         this.controller = controller;
@@ -74,6 +82,7 @@ public class ProductosView extends JPanel {
         btnNuevo = new JButton("Nuevo");
         btnEditar = new JButton("Editar");
         btnEliminar = new JButton("Eliminar");
+        btnReporte = new JButton("Generar Reporte");
     }
 
     private void setupComponents() {
@@ -110,6 +119,8 @@ public class ProductosView extends JPanel {
         buttonPanel.add(btnNuevo);
         buttonPanel.add(btnEditar);
         buttonPanel.add(btnEliminar);
+        buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
+        buttonPanel.add(btnReporte);
 
         // Panel superior que combina búsqueda y botones
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -139,6 +150,7 @@ public class ProductosView extends JPanel {
         btnNuevo.addActionListener(e -> mostrarDialogoNuevoProducto());
         btnEditar.addActionListener(e -> mostrarDialogoEditarProducto());
         btnEliminar.addActionListener(e -> eliminarProducto());
+        btnReporte.addActionListener(e -> generarReporte());
 
         // Listener para la selección en la tabla
         tablaProductos.getSelectionModel().addListSelectionListener(e -> {
@@ -448,5 +460,69 @@ public class ProductosView extends JPanel {
     gbc.gridx = 1;
     panel.add(campo, gbc);
 }
-      
+    
+    private void generarReporte() {
+    try {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("Guardar Reporte de Productos");
+    fileChooser.setSelectedFile(new File("ReporteProductos.xlsx"));
+
+    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+        File selectedFile = fileChooser.getSelectedFile();
+        final File file;
+        if (!selectedFile.getName().toLowerCase().endsWith(".xlsx")) {
+            file = new File(selectedFile.getParentFile(), selectedFile.getName() + ".xlsx");
+        } else {
+            file = selectedFile;
+        }
+
+        // Mostrar diálogo de progreso
+        JDialog progressDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Generando Reporte", true);
+        JProgressBar progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
+        progressBar.setString("Generando reporte...");
+        progressBar.setStringPainted(true);
+
+        JPanel progressPanel = new JPanel(new BorderLayout(10, 10));
+        progressPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        progressPanel.add(new JLabel("Por favor espere..."), BorderLayout.NORTH);
+        progressPanel.add(progressBar, BorderLayout.CENTER);
+
+        progressDialog.add(progressPanel);
+        progressDialog.pack();
+        progressDialog.setLocationRelativeTo(this);
+
+        // Generar reporte en un hilo separado
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                byte[] reporteBytes = controller.generarReporteProductos();
+                try (FileOutputStream fos = new FileOutputStream(file)) {
+                    fos.write(reporteBytes);
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                progressDialog.dispose();
+                try {
+                    get(); // Verificar si hubo errores
+                    JOptionPane.showMessageDialog(ProductosView.this, "Reporte generado exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    logger.error("Error al generar reporte", e);
+                    JOptionPane.showMessageDialog(ProductosView.this, "Error al generar reporte: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+
+        worker.execute();
+        progressDialog.setVisible(true);
     }
+} catch (Exception e) {
+    logger.error("Error al generar reporte", e);
+    JOptionPane.showMessageDialog(this, "Error al generar reporte: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+}
+    }
+      
+   }

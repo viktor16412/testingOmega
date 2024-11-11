@@ -1,8 +1,10 @@
 
 package com.rintisa.controller;
 
+import com.rintisa.exception.ReportException;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.Producto;
+import com.rintisa.service.impl.ProductoReporteService;
 import com.rintisa.service.interfaces.IProductoService;
 import java.util.ArrayList;
 
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProductoController {
     private final IProductoService productoService;
+     private final ProductoReporteService reporteService;
     private static final Logger logger = LoggerFactory.getLogger(ProductoController.class);
 
     public ProductoController(IProductoService productoService) {
@@ -20,6 +23,7 @@ public class ProductoController {
             throw new IllegalArgumentException("productoService no puede ser null");
         }
         this.productoService = productoService;
+        this.reporteService = new ProductoReporteService(productoService);
     }
 
     public List<Producto> listarProductos() {
@@ -145,5 +149,18 @@ public class ProductoController {
         }
     }
     
+    public byte[] generarReporteProductos() throws ReportException {
+        try {
+            logger.debug("Iniciando generación de reporte de productos");
+            return reporteService.generarReporteProductos();
+        } catch (Exception e) {
+            logger.error("Error al generar reporte de productos", e);
+            throw new ReportException("Error al generar reporte: " + e.getMessage());
+        }
+    }
     
-}
+    
+    }
+    
+    
+
