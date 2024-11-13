@@ -4,13 +4,14 @@ package com.rintisa.dao.interfaces;
 import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.model.DetalleRecepcion;
 import com.rintisa.exception.DatabaseException;
+import com.rintisa.model.enums.EstadoRecepcion;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, Long> {
     
- 
+    
     //Busca una recepción por su número
     Optional<RecepcionMercancia> findByNumeroRecepcion(String numeroRecepcion) throws DatabaseException;
    
@@ -44,11 +45,12 @@ public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, 
     
     
     //Obtiene el historial de estados de una recepción
-    List<RecepcionMercancia.EstadoRecepcion> getHistorialEstados(Long recepcionId) throws DatabaseException;
+    List<EstadoRecepcion> getHistorialEstados(Long recepcionId) throws DatabaseException;
+    
     
     
     //Actualiza el estado de una recepción 
-    void updateEstado(Long recepcionId, RecepcionMercancia.EstadoRecepcion estado, String observaciones) 
+    void updateEstado(Long recepcionId, EstadoRecepcion estado, String observaciones) 
         throws DatabaseException;
     
     
@@ -65,7 +67,7 @@ public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, 
         String numeroRecepcion,
         String numeroOrdenCompra,
         Long proveedorId,
-        RecepcionMercancia.EstadoRecepcion estado,
+        EstadoRecepcion estado,
         LocalDateTime fechaInicio,
         LocalDateTime fechaFin
     ) throws DatabaseException;
@@ -76,7 +78,7 @@ public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, 
     
     
     //Obtiene el conteo de recepciones por estado
-    java.util.Map<RecepcionMercancia.EstadoRecepcion, Integer> getConteosPorEstado() 
+    java.util.Map<EstadoRecepcion, Integer> getConteosPorEstado() 
        throws DatabaseException;
     
     
@@ -102,7 +104,7 @@ public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, 
     DetalleRecepcion saveDetalle(DetalleRecepcion detalle) throws DatabaseException;
     
      //Lista las recepciones por estado
-    List<RecepcionMercancia> findByEstado(RecepcionMercancia.EstadoRecepcion estado) throws DatabaseException;
+    List<RecepcionMercancia> findByEstado(EstadoRecepcion estado) throws DatabaseException;
     
     //Lista las recepciones por rango de fechas
     List<RecepcionMercancia> findByFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin) 
@@ -120,7 +122,26 @@ public interface IRecepcionMercanciaDao extends IGenericDao<RecepcionMercancia, 
     void update(RecepcionMercancia recepcion) throws DatabaseException;
     
     
+        
+    /**
+     * Busca recepciones por número de documento
+     * @param numeroDocumento Número de documento a buscar
+     * @return Lista de recepciones que coinciden con el número de documento
+     * @throws DatabaseException si ocurre un error en la base de datos
+     */
+     RecepcionMercancia findByNumeroDocumento(String numeroDocumento) throws DatabaseException;
 
     
     
+    /**
+     * Encuentra las recepciones dentro de un rango de fechas.
+     *
+     * @param fechaInicio la fecha de inicio del rango
+     * @param fechaFin la fecha de fin del rango
+     * @return una lista de recepciones dentro del rango de fechas
+     * @throws DatabaseException si ocurre un error en la consulta a la base de datos
+     */
+    List<RecepcionMercancia> findByDateRange(LocalDateTime fechaInicio, LocalDateTime fechaFin) throws DatabaseException;
+
+
 }

@@ -5,12 +5,17 @@ import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.controller.RecepcionMercanciaController;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.DetalleRecepcion;
+import com.rintisa.model.Pantalla;
 import com.rintisa.model.Producto;
 import com.rintisa.model.Proveedor;
-import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
+import com.rintisa.model.enums.EstadoRecepcion;
 import com.rintisa.model.Usuario;
+import com.rintisa.service.interfaces.IPermisosPantallaService;
+import com.rintisa.service.interfaces.IProductoService;
+import com.rintisa.service.interfaces.IProveedorService;
 import com.rintisa.util.ModernUIUtils;
 import com.rintisa.util.SwingUtils;
+import com.rintisa.view.base.VistaBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.swing.*;
@@ -153,6 +158,9 @@ public class RecepcionMercanciaView extends JPanel {
         return false;
     }
 
+     
+
+    
     @Override
     public Object getValueAt(int row, int column) {
         if (row >= 0 && row < recepciones.size()) {
@@ -160,8 +168,10 @@ public class RecepcionMercanciaView extends JPanel {
             switch (column) {
                 case 0: return recepcion.getId();
                 case 1: return recepcion.getNumeroRecepcion();
-                case 2: return recepcion.getFechaRecepcion();
-                case 3: return controller.obtenerNombreProveedor(recepcion.getProveedor());
+                case 2: return recepcion.getFecha();
+                //case 3: return controller.obtenerNombreProveedor(recepcion.getId());
+                case 3: return String.valueOf(recepcion.getProveedor());
+
                 case 4: return recepcion.getNumeroOrdenCompra();
                 case 5: return recepcion.getEstado();
                 default: return null;
@@ -496,9 +506,9 @@ public class RecepcionMercanciaView extends JPanel {
         EstadoRecepcion estado = recepcion.getEstado();
         btnEditar.setEnabled(estado == EstadoRecepcion.PENDIENTE);
         btnVerificar.setEnabled(estado == EstadoRecepcion.PENDIENTE);
-        btnAceptar.setEnabled(estado == EstadoRecepcion.VERIFICADO);
-        btnRechazar.setEnabled(estado != EstadoRecepcion.ACEPTADO && 
-                             estado != EstadoRecepcion.RECHAZADO);
+        btnAceptar.setEnabled(estado == EstadoRecepcion.APROBADA);
+        btnRechazar.setEnabled(estado != EstadoRecepcion.APROBADA && 
+                             estado != EstadoRecepcion.RECHAZADA);
         btnEliminar.setEnabled(estado == EstadoRecepcion.PENDIENTE);
     } else {
         // No hay recepción seleccionada, deshabilitar todos los botones
@@ -536,9 +546,9 @@ public class RecepcionMercanciaView extends JPanel {
     private Color getEstadoColor(EstadoRecepcion estado) {
         switch (estado) {
             case PENDIENTE: return new Color(255, 255, 224);
-            case VERIFICADO: return new Color(240, 248, 255);
-            case ACEPTADO: return new Color(240, 255, 240);
-            case RECHAZADO: return new Color(255, 240, 240);
+            case EN_PROCESO: return new Color(240, 248, 255);
+            case APROBADA: return new Color(240, 255, 240);
+            case RECHAZADA: return new Color(255, 240, 240);
             default: return Color.WHITE;
         }
     }
@@ -554,9 +564,9 @@ public class RecepcionMercanciaView extends JPanel {
 
             btnEditar.setEnabled(estado == EstadoRecepcion.PENDIENTE);
             btnVerificar.setEnabled(estado == EstadoRecepcion.PENDIENTE);
-            btnAceptar.setEnabled(estado == EstadoRecepcion.VERIFICADO);
-            btnRechazar.setEnabled(estado != EstadoRecepcion.ACEPTADO && 
-                                 estado != EstadoRecepcion.RECHAZADO);
+            btnAceptar.setEnabled(estado == EstadoRecepcion.EN_PROCESO);
+            btnRechazar.setEnabled(estado != EstadoRecepcion.APROBADA && 
+                                 estado != EstadoRecepcion.RECHAZADA);
             btnEliminar.setEnabled(estado == EstadoRecepcion.PENDIENTE);
         } else {
             btnEditar.setEnabled(false);
@@ -926,7 +936,7 @@ public class RecepcionMercanciaView extends JPanel {
             // Fecha
             gbc.gridy++;
             addLabelAndField(mainPanel, gbc, "Fecha:", 
-                           recepcion.getFechaRecepcion().format(
+                           recepcion.getFecha().format(
                                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), false);
 
             // Usuario responsable
@@ -1005,13 +1015,16 @@ public class RecepcionMercanciaView extends JPanel {
             // Copiar datos que no cambian
             recepcionActualizada.setId(recepcion.getId());
             recepcionActualizada.setNumeroRecepcion(recepcion.getNumeroRecepcion());
-            recepcionActualizada.setFechaRecepcion(recepcion.getFechaRecepcion());
+            recepcionActualizada.setFecha(recepcion.getFecha());
             recepcionActualizada.setEstado(recepcion.getEstado());
             recepcionActualizada.setResponsable(recepcion.getResponsable());
             
             // Actualizar los campos editados
             recepcionActualizada.setNumeroOrdenCompra(txtOrdenCompra.getText().trim());
-            recepcionActualizada.setProveedor(proveedorSeleccionado.getId().toString());
+            Proveedor proveedor = new Proveedor();
+            proveedor.setId(proveedorSeleccionado.getId());
+            recepcionActualizada.setProveedor(proveedor);
+            //recepcionActualizada.setProveedor(proveedorSeleccionado.getId().toString());
             recepcionActualizada.setObservaciones(txtObservaciones.getText().trim());
 
             // Guardar cambios
@@ -1116,11 +1129,11 @@ public class RecepcionMercanciaView extends JPanel {
         infoPanel.add(new JLabel(recepcion.getNumeroRecepcion()));
         
         infoPanel.add(new JLabel("Fecha:"));
-        infoPanel.add(new JLabel(recepcion.getFechaRecepcion()
+        infoPanel.add(new JLabel(recepcion.getFechaCreacion()
             .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
         
         infoPanel.add(new JLabel("Proveedor:"));
-        infoPanel.add(new JLabel(recepcion.getProveedorNombre()));
+        infoPanel.add(new JLabel(String.valueOf(recepcion.getProveedorId())));
         
         infoPanel.add(new JLabel("Orden de Compra:"));
         infoPanel.add(new JLabel(recepcion.getNumeroOrdenCompra()));
@@ -1417,7 +1430,7 @@ public class RecepcionMercanciaView extends JPanel {
         RecepcionMercancia recepcion = modeloTabla.getRecepcionAt(modelRow);
 
         // Verificar estado
-        if (recepcion.getEstado() != EstadoRecepcion.VERIFICADO) {
+        if (recepcion.getEstado() != EstadoRecepcion.EN_PROCESO) {
             JOptionPane.showMessageDialog(this,
                 "Solo se pueden aceptar recepciones en estado VERIFICADO",
                 "Estado inválido",
@@ -1483,7 +1496,7 @@ public class RecepcionMercanciaView extends JPanel {
 
         // Verificar estado
         EstadoRecepcion estado = recepcion.getEstado();
-        if (estado == EstadoRecepcion.ACEPTADO || estado == EstadoRecepcion.RECHAZADO) {
+        if (estado == EstadoRecepcion.APROBADA || estado == EstadoRecepcion.RECHAZADA) {
             JOptionPane.showMessageDialog(this,
                 "No se puede rechazar una recepción que ya está finalizada",
                 "Estado inválido",

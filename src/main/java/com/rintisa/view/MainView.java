@@ -1,6 +1,24 @@
 
 package com.rintisa.view;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import com.rintisa.model.Usuario;
+import com.rintisa.model.Rol;
+import com.rintisa.model.RegistroAcceso;
+import java.awt.Desktop;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import com.rintisa.controller.PermisoPantallaController;
 import com.rintisa.controller.ProductoController;
 import com.rintisa.controller.RecepcionMercanciaController;
 import com.rintisa.controller.UsuarioController;
@@ -16,12 +34,19 @@ import com.rintisa.service.impl.ProveedorService;
 import com.rintisa.service.impl.RecepcionMercanciaService;
 import com.rintisa.service.impl.RecepcionReporteService;
 import com.rintisa.controller.ProductoController;
-
+import com.rintisa.exception.ValidationException;
+import com.rintisa.model.Pantalla;
+import com.rintisa.model.Producto;
+import com.rintisa.model.RecepcionMercancia;
+import com.rintisa.service.interfaces.IPermisosPantallaService;
+import com.rintisa.model.enums.EstadoRecepcion;
 import com.rintisa.service.interfaces.IUsuarioService;
 import com.rintisa.service.interfaces.IRolService;
 import com.rintisa.service.interfaces.IProductoService;
 import com.rintisa.service.interfaces.IProveedorService;
 import com.rintisa.service.interfaces.IRecepcionMercanciaService;
+import com.rintisa.util.IconManager;
+import com.rintisa.util.ModernUIUtils;
 
 import com.rintisa.util.SwingUtils;
 import com.rintisa.util.ReportGenerator;
@@ -34,109 +59,282 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-////MAIN FUNCIONANDO///
 public class MainView extends JFrame {
-    
     private static final Logger logger = LoggerFactory.getLogger(MainView.class);
     
     // Controladores
     private final UsuarioController userController;
-   
     private final RolController rolController;
+    private final PermisoPantallaController permisoPantallaController;
+    
+    // Servicios
     private final IUsuarioService usuarioService;
     private final IRolService rolService;
-    private final Usuario usuarioActual;
-    private final IRecepcionMercanciaService recepcionService;
+    private final IPermisosPantallaService permisosPantallaService;
     private final IProductoService productoService;
+    private final IRecepcionMercanciaService recepcionService;
     
-    // Componentes principales
-    private JPanel mainPanel;
-    private JMenuBar menuBar;
-    private JToolBar toolBar;
-    private JPanel contentPanel;
-    private JLabel statusBar;
+    // Usuario actual y sus permisos
+    private final Usuario usuarioActual;
+    private Map<Pantalla, Set<String>> permisosUsuario;
     
-    // Menús
+    // Componentes principales de la UI
+    private JPanel mainPanel;          // Panel principal
+    private JMenuBar menuBar;          // Barra de menú
+    private JToolBar toolBar;          // Barra de herramientas
+    private JPanel contentPanel;       // Panel de contenido
+    private JLabel statusBar;          // Barra de estado
+    
+    // Menús principales
     private JMenu menuArchivo;
     private JMenu menuAdministracion;
     private JMenu menuReportes;
+    private JMenu menuAlmacen;
     private JMenu menuAyuda;
     
-    // Constructor
-    public MainView(UsuarioController userController, 
-                   IProductoService productoService,
-                   IRecepcionMercanciaService recepcionService) {
+    // Botones de la barra de herramientas
+    private Map<String, JButton> toolbarButtons;
+
+    /**
+     * Constructor principal de MainView
+     */
+    public MainView(
+            UsuarioController userController,
+            IProductoService productoService,
+            PermisoPantallaController permisoPantallaController,
+            IPermisosPantallaService permisosPantallaService,
+            IRecepcionMercanciaService recepcionService) {
+            
+        logger.debug("Inicializando MainView");
         
-        logger.debug("Iniciando construcción de MainView");
-        
-        // Validar parámetros
-        if (userController == null) {
-            throw new IllegalArgumentException("usuarioController no puede ser null");
-        }
-        if (productoService == null) {
-            throw new IllegalArgumentException("productoService no puede ser null");
-        }
-        if (recepcionService == null) {
-            throw new IllegalArgumentException("recepcionService no puede ser null");
-        }
-        
-        this.userController  = userController ;
-        this.usuarioActual = userController.getUsuarioActual();
-        this.rolController = userController.getRolController();
+        // Inicializar controladores y servicios
+        this.userController = userController;
         this.usuarioService = userController.getUsuarioService();
+        this.rolController = userController.getRolController();
         this.rolService = userController.getRolService();
+        this.permisoPantallaController = permisoPantallaController;
+        this.permisosPantallaService = permisosPantallaService;
+        this.productoService = productoService;
+        this.recepcionService = recepcionService;
         
-         // Inicializar DAOs
-        ProductoDao productoDao = new ProductoDao();
-        ProveedorDao proveedorDao = new ProveedorDao();
-        RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
-        
-        // Inicializar Servicios
-        this.productoService = new ProductoService(productoDao);
-        this.recepcionService = new RecepcionMercanciaService(recepcionDao);
-        
-        
-        if (this.usuarioActual == null) {
+        // Obtener usuario actual
+        this.usuarioActual = userController.getUsuarioActual();
+        if (usuarioActual == null) {
             throw new IllegalStateException("No hay usuario autenticado");
         }
         
-        initComponents();
-        configurarVentana();
-        configurarMenus();
-        configurarToolBar();
-        configurarStatusBar();
-        configurarEventos();
+        // Inicializar mapa de botones
+        this.toolbarButtons = new HashMap<>();
         
-        // Mostrar panel de bienvenida
-        mostrarPanelBienvenida();
-        
-        logger.info("Ventana principal inicializada para usuario: {}", 
-                   usuarioActual.getUsername());
+        try {
+            // Cargar permisos del usuario
+            cargarPermisosUsuario();
+            
+            // Inicializar componentes UI
+            initComponents();
+            configurarVentana();
+            configurarMenus();
+            configurarToolBar();
+            configurarStatusBar();
+            configurarEventos();
+            
+            // Mostrar panel inicial
+            mostrarPanelBienvenida();
+            
+            logger.info("MainView inicializado correctamente para usuario: {}", 
+                usuarioActual.getUsername());
+                
+        } catch (Exception e) {
+            logger.error("Error al inicializar MainView", e);
+            throw new RuntimeException("Error al inicializar MainView: " + e.getMessage(), e);
+        }
     }
     
-    private void initComponents() {
-        // Panel principal
-        mainPanel = new JPanel(new BorderLayout());
+    private void configurarStatusBar() {
+        // Mostrar información del usuario en la barra de estado
+        actualizarStatusBar();
         
-        // Panel de contenido
+        // Timer para actualizar la hora cada minuto
+        new Timer(60000, e -> actualizarStatusBar()).start();
+    }
+        
+    /**
+     * Carga los permisos del usuario actual
+     */
+    private void cargarPermisosUsuario() throws DatabaseException {
+        try {
+            if (usuarioActual.getRol() == null) {
+                throw new IllegalStateException("El usuario no tiene un rol asignado");
+            }
+            
+            this.permisosUsuario = permisoPantallaController
+                .obtenerPermisosUsuario(usuarioActual.getRol().getNombre());
+                
+            logger.debug("Permisos cargados para usuario {}: {}", 
+                usuarioActual.getUsername(), permisosUsuario);
+                
+        } catch (Exception e) {
+            logger.error("Error al cargar permisos del usuario", e);
+            throw new DatabaseException("Error al cargar permisos: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verifica si el usuario tiene acceso a una pantalla específica
+     */
+    protected boolean tieneAcceso(Pantalla pantalla) {
+        Set<String> permisos = permisosUsuario.get(pantalla);
+        return permisos != null && permisos.contains("acceso");
+    }
+
+    /**
+     * Verifica si el usuario tiene permiso de edición en una pantalla
+     */
+    protected boolean puedeEditar(Pantalla pantalla) {
+        Set<String> permisos = permisosUsuario.get(pantalla);
+        return permisos != null && permisos.contains("edicion");
+    }
+
+    /**
+     * Verifica si el usuario tiene permiso de eliminación en una pantalla
+     */
+    protected boolean puedeEliminar(Pantalla pantalla) {
+        Set<String> permisos = permisosUsuario.get(pantalla);
+        return permisos != null && permisos.contains("eliminacion");
+    }
+
+     /**
+     * Inicializa los componentes principales de la interfaz
+     */
+    private void initComponents() {
+        logger.debug("Inicializando componentes principales");
+        
+        // Panel principal con BorderLayout
+        mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // Panel de contenido con bordes
         contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        contentPanel.setBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(5, 5, 5, 5),
+                BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY)
+            )
+        );
         
         // Barra de estado
         statusBar = new JLabel(" ");
-        statusBar.setBorder(BorderFactory.createEtchedBorder());
+        statusBar.setBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, java.awt.Color.LIGHT_GRAY),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            )
+        );
         
         // Agregar componentes al panel principal
         mainPanel.add(contentPanel, BorderLayout.CENTER);
         mainPanel.add(statusBar, BorderLayout.SOUTH);
         
+        // Establecer el panel principal como contenido del frame
         setContentPane(mainPanel);
+        
+        logger.debug("Componentes principales inicializados");
     }
-    
+
+    /**
+     * Configura la barra de herramientas
+     */
+    private void configurarToolBar() {
+        logger.debug("Configurando barra de herramientas");
+        
+        toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+        toolBar.setBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, java.awt.Color.LIGHT_GRAY),
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)
+            )
+        );
+
+        // Botones para Administración
+        if (userController.esAdministrador(usuarioActual)) {
+            agregarBotonToolbar("usuarios", "Usuarios", "user", 
+                e -> navegarAPantalla(Pantalla.USUARIOS));
+            
+            agregarBotonToolbar("roles", "Roles", "groups", 
+                e -> navegarAPantalla(Pantalla.ROLES));
+            
+            agregarBotonToolbar("permisos", "Permisos", "key", 
+                e -> navegarAPantalla(Pantalla.PERMISOS));
+            
+            toolBar.addSeparator();
+        }
+
+        // Botones para Almacén
+        if (tieneAcceso(Pantalla.RECEPCION)) {
+            agregarBotonToolbar("recepcion", "Recepción", "inbox", 
+                e -> navegarAPantalla(Pantalla.RECEPCION));
+        }
+        
+        if (tieneAcceso(Pantalla.PRODUCTOS)) {
+            agregarBotonToolbar("productos", "Productos", "package", 
+                e -> navegarAPantalla(Pantalla.PRODUCTOS));
+        }
+
+        // Botones siempre visibles
+        toolBar.addSeparator();
+        agregarBotonToolbar("perfil", "Mi Perfil", "user-check", 
+            e -> mostrarPerfil());
+        agregarBotonToolbar("password", "Cambiar Contraseña", "lock", 
+            e -> mostrarDialogoCambiarPassword());
+        
+        mainPanel.add(toolBar, BorderLayout.NORTH);
+        
+        logger.debug("Barra de herramientas configurada");
+    }
+
+    /**
+     * Agrega un botón a la barra de herramientas
+     */
+    private void agregarBotonToolbar(String id, String tooltip, String iconName, 
+                                   ActionListener action) {
+        JButton button = new JButton();
+        button.setToolTipText(tooltip);
+        
+        // Configurar icono
+        try {
+            ImageIcon icon = IconManager.getIcon(iconName, IconManager.SMALL);
+            if (icon != null) {
+                button.setIcon(icon);
+            }
+        } catch (Exception e) {
+            logger.warn("No se pudo cargar el icono: {}", iconName);
+        }
+        
+        // Configurar apariencia
+        button.setFocusable(false);
+        button.addActionListener(action);
+        
+        // Agregar el botón
+        toolBar.add(button);
+        toolbarButtons.put(id, button);
+    }
+
+    /**
+     * Configura la ventana principal
+     */
     private void configurarVentana() {
         setTitle("Sistema RINTISA - " + usuarioActual.getNombre() + " " + 
                 usuarioActual.getApellido());
@@ -145,15 +343,17 @@ public class MainView extends JFrame {
         setMinimumSize(new Dimension(800, 600));
         setLocationRelativeTo(null);
         
-        // Icono de la aplicación
+        // Configurar icono de la aplicación
         try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/icons/logo.png"));
-            setIconImage(icon.getImage());
+            ImageIcon icon = IconManager.getIcon("logo");
+            if (icon != null) {
+                setIconImage(icon.getImage());
+            }
         } catch (Exception e) {
             logger.warn("No se pudo cargar el icono de la aplicación");
         }
         
-        // Confirmar antes de cerrar
+        // Manejar cierre de ventana
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -161,410 +361,200 @@ public class MainView extends JFrame {
             }
         });
     }
+
+    /**
+     * Actualiza la barra de estado
+     */
+    private void actualizarStatusBar() {
+        String fecha = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm")
+            .format(new java.util.Date());
+            
+        statusBar.setText(
+            String.format(" Usuario: %s | Rol: %s | Fecha: %s",
+                usuarioActual.getUsername(),
+                usuarioActual.getRol().getNombre(),
+                fecha
+            )
+        );
+    }
+
+    /**
+     * Muestra diálogo de confirmación para salir
+     */
+    private void confirmarSalida() {
+        int opcion = JOptionPane.showConfirmDialog(
+            this,
+            "¿Está seguro que desea salir del sistema?",
+            "Confirmar Salida",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (opcion == JOptionPane.YES_OPTION) {
+            logger.info("Usuario {} cerrando sesión", usuarioActual.getUsername());
+            dispose();
+            System.exit(0);
+        }
+    }
     
-    
+    /**
+     * Configura la barra de menús
+     */
     private void configurarMenus() {
+        logger.debug("Configurando menús");
+        
         menuBar = new JMenuBar();
         
         // Menú Archivo
+        configurarMenuArchivo();
+        
+        // Menú Administración (solo para administradores)
+        if (userController.esAdministrador(usuarioActual)) {
+            configurarMenuAdministracion();
+        }
+        
+        // Menú Almacén (según permisos)
+        if (tieneAccesoAlmacen()) {
+            configurarMenuAlmacen();
+        }
+        
+        // Menú Reportes (según permisos)
+        configurarMenuReportes();
+        
+        // Menú Ayuda
+        configurarMenuAyuda();
+        
+        setJMenuBar(menuBar);
+        logger.debug("Menús configurados");
+    }
+
+    /**
+     * Configura el menú Archivo
+     */
+    private void configurarMenuArchivo() {
         menuArchivo = new JMenu("Archivo");
         menuArchivo.setMnemonic(KeyEvent.VK_A);
         
-        JMenuItem menuCambiarPassword = new JMenuItem("Cambiar Contraseña", 
-            new ImageIcon(getClass().getResource("/icons/key.png")));
-        menuCambiarPassword.addActionListener(e -> mostrarDialogoCambiarPassword());
+        // Perfil de Usuario
+        JMenuItem menuPerfil = crearMenuItem("Mi Perfil", "user-check", 
+            KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK),
+            e -> mostrarPerfil());
+            
+        // Cambiar Contraseña
+        JMenuItem menuPassword = crearMenuItem("Cambiar Contraseña", "key",
+            KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK),
+            e -> mostrarDialogoCambiarPassword());
+            
+        // Cerrar Sesión
+        JMenuItem menuCerrarSesion = crearMenuItem("Cerrar Sesión", "log-out",
+            null, e -> cerrarSesion());
+            
+        // Salir
+        JMenuItem menuSalir = crearMenuItem("Salir", "x",
+            KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK),
+            e -> confirmarSalida());
         
-        JMenuItem menuCerrarSesion = new JMenuItem("Cerrar Sesión", 
-            new ImageIcon(getClass().getResource("/icons/key.png")));
-         menuCerrarSesion.addActionListener(e -> {
-            try {
-                cerrarSesion();
-            } catch (DatabaseException ex) {
-                java.util.logging.Logger.getLogger(MainView.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        });
-        
-        JMenuItem menuSalir = new JMenuItem("Salir", 
-            new ImageIcon(getClass().getResource("/icons/cancel.png")));//falta iconos salir
-        menuSalir.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 
-            InputEvent.CTRL_DOWN_MASK));
-        menuSalir.addActionListener(e -> confirmarSalida());
-        
-        menuArchivo.add(menuCambiarPassword);
+        menuArchivo.add(menuPerfil);
+        menuArchivo.addSeparator();
+        menuArchivo.add(menuPassword);
         menuArchivo.addSeparator();
         menuArchivo.add(menuCerrarSesion);
         menuArchivo.addSeparator();
         menuArchivo.add(menuSalir);
         
-        // Menú Administración(solo para administradores)
+        menuBar.add(menuArchivo);
+    }
+
+    /**
+     * Configura el menú Administración
+     */
+    private void configurarMenuAdministracion() {
         menuAdministracion = new JMenu("Administración");
         menuAdministracion.setMnemonic(KeyEvent.VK_D);
         
-        JMenuItem menuUsuarios = new JMenuItem("Gestión de Usuarios", 
-            new ImageIcon(getClass().getResource("/icons/user.png")));
-        menuUsuarios.addActionListener(e -> mostrarGestionUsuarios());
-        
-        JMenuItem menuRoles = new JMenuItem("Gestión de Roles", 
-            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos roles
-        menuRoles.addActionListener(e -> mostrarGestionRoles());
+        // Gestión de Usuarios
+        JMenuItem menuUsuarios = crearMenuItem("Gestión de Usuarios", "users",
+            KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK),
+            e -> navegarAPantalla(Pantalla.USUARIOS));
+            
+        // Gestión de Roles
+        JMenuItem menuRoles = crearMenuItem("Gestión de Roles", "shield",
+            KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK),
+            e -> navegarAPantalla(Pantalla.ROLES));
+            
+        // Gestión de Permisos
+        JMenuItem menuPermisos = crearMenuItem("Gestión de Permisos", "key",
+            KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK),
+            e -> navegarAPantalla(Pantalla.PERMISOS));
         
         menuAdministracion.add(menuUsuarios);
         menuAdministracion.add(menuRoles);
+        menuAdministracion.add(menuPermisos);
         
-         // Solo mostrar menú de administración si es admin
-        String rolUsuario = usuarioActual.getRol() != null ? usuarioActual.getRol().getNombre() : "";
-        menuAdministracion.setVisible("ADMIN".equals(rolUsuario));
+        menuBar.add(menuAdministracion);
+    }
 
+    /**
+     * Configura el menú Almacén
+     */
+    private void configurarMenuAlmacen() {
+        menuAlmacen = new JMenu("Almacén");
+        menuAlmacen.setMnemonic(KeyEvent.VK_L);
         
-        // El menú de administración solo es visible para administradores
-        //menuAdministracion.setVisible(userController.esAdministrador(usuarioActual));
-        boolean esAdmin = userController.esAdministrador(usuarioActual);
-        menuAdministracion.setVisible(esAdmin);
+        if (tieneAcceso(Pantalla.RECEPCION)) {
+            JMenuItem menuRecepcion = crearMenuItem("Recepción de Mercancía", "inbox",
+                KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.ALT_DOWN_MASK),
+                e -> navegarAPantalla(Pantalla.RECEPCION));
+            menuAlmacen.add(menuRecepcion);
+        }
         
-        // Menú Reportes
+        if (tieneAcceso(Pantalla.PRODUCTOS)) {
+            JMenuItem menuProductos = crearMenuItem("Mantenimiento de Productos", "package",
+                KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.ALT_DOWN_MASK),
+                e -> navegarAPantalla(Pantalla.PRODUCTOS));
+            menuAlmacen.add(menuProductos);
+        }
+        
+        menuBar.add(menuAlmacen);
+    }
+
+    /**
+     * Configura el menú Reportes
+     */
+    private void configurarMenuReportes() {
         menuReportes = new JMenu("Reportes");
         menuReportes.setMnemonic(KeyEvent.VK_R);
         
-    // Reportes de Administración (solo para admin)
-         if (esAdmin) {
-        JMenuItem menuReporteUsuarios = new JMenuItem("Reporte de Usuarios", 
-            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte usuario
-        JMenuItem menuReporteRoles = new JMenuItem("Reporte de Roles", 
-            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte roles
-        JMenuItem menuReporteAccesos = new JMenuItem("Reporte de Accesos", 
-            new ImageIcon(getClass().getResource("/icons/user.png")));//falta iconos reporte accesos
-        
-        menuReporteUsuarios.addActionListener(e -> generarReporteUsuarios());
-        menuReporteRoles.addActionListener(e -> generarReporteRoles());
-        menuReporteAccesos.addActionListener(e -> generarReporteAccesos());
-        
-        menuReportes.add(menuReporteUsuarios);
-        menuReportes.add(menuReporteRoles);
-        menuReportes.add(menuReporteAccesos);
-         }
-         
-        // Menú Almacén
-        JMenu menuAlmacen = new JMenu("Almacén");
-        menuAlmacen.setMnemonic(KeyEvent.VK_A);
-
-        JMenuItem menuRecepcion = new JMenuItem("Recepción de Mercancía",
-            new ImageIcon(getClass().getResource("/icons/user.png")));
-        menuRecepcion.addActionListener(e -> mostrarRecepcionMercancia());
-        //JMenuItem menuInventario = new JMenuItem("Inventario",
-            //new ImageIcon(getClass().getResource("/icons/user.png")));
-     //   menuInventario.addActionListener(e -> mostrarInventario()); //falta implementar
-     
-        // Mantenimiento de Productos
-        JMenuItem menuProductos = new JMenuItem("Mantenimiento de Productos",
-        new ImageIcon(getClass().getResource("/icons/user.png")));
-        menuProductos.addActionListener(e -> mostrarMantenimientoProductos());
-     
-     
-        // Reportes de Almacén (solo para rol ALMACEN)
-        if (tieneRolAlmacen(usuarioActual)) {
-        JMenu menuReportesAlmacen = new JMenu("Reportes de Almacén");
-        
-        //JMenuItem menuReporteGeneral = new JMenuItem("Reporte General de Recepciones");
-        //menuReporteGeneral.addActionListener(e -> mostrarRecepcionMercancia());
-
-        JMenuItem menuReporteProveedor = new JMenuItem("Reporte por Proveedor");
-        // menuReporteProveedor.addActionListener(e -> generarReporteProveedor());
-
-        JMenuItem menuReporteProductos = new JMenuItem("Reporte de Productos");
-        // menuReporteProductos.addActionListener(e -> generarReporteProductos());
-
-        //menuReportesAlmacen.add(menuReporteGeneral);
-        menuReportesAlmacen.add(menuReporteProveedor);
-        menuReportesAlmacen.add(menuReporteProductos);
-
-        menuAlmacen.add(menuRecepcion);
-        menuAlmacen.addSeparator();
-        menuAlmacen.add(menuReportesAlmacen);
-        menuAlmacen.addSeparator();
-        menuAlmacen.add(menuProductos);
-            }
-        
-
-        menuAlmacen.add(menuRecepcion);
-        //menuAlmacen.add(menuInventario);
-
-        // Solo mostrar menú de almacén si el usuario tiene el rol correspondiente
-        menuAlmacen.setVisible(tieneRolAlmacen(usuarioActual));
-
-        // Agregar el menú a la barra después de menuAdministracion
-            menuBar.add(menuAlmacen);
-           
-        
-       
-        
-        // Menú Ayuda
-        menuAyuda = new JMenu("Ayuda");
-        menuAyuda.setMnemonic(KeyEvent.VK_Y);
-        
-        JMenuItem menuAcercaDe = new JMenuItem("Acerca de...", 
-            new ImageIcon(getClass().getResource("/icons/logo.png")));
-        menuAcercaDe.addActionListener(e -> mostrarAcercaDe());
-        
-        menuAyuda.add(menuAcercaDe);
-        
-        // Agregar menús a la barra
-        menuBar.add(menuArchivo);
-        menuBar.add(menuAdministracion);
-        menuBar.add(menuReportes);
-        menuBar.add(menuAyuda);
-        
-        setJMenuBar(menuBar);
-    }
-    
-    private void configurarToolBar() {
-        toolBar = new JToolBar();
-        toolBar.setFloatable(false);
-        
-        // Botones de la barra de herramientas
-        JButton btnUsuarios = new JButton(new ImageIcon(
-            getClass().getResource("/icons/user.png")));
-        btnUsuarios.setToolTipText("Gestión de Usuarios");
-        btnUsuarios.addActionListener(e -> mostrarGestionUsuarios());
-        
-        JButton btnRoles = new JButton(new ImageIcon(
-            getClass().getResource("/icons/user.png")));///////Buscar Cambio de Icono a Roles
-        btnRoles.setToolTipText("Gestión de Roles");
-        btnRoles.addActionListener(e -> mostrarGestionRoles());
-        
-        JButton btnReportes = new JButton(new ImageIcon(
-            getClass().getResource("/icons/user.png")));///////Buscar Cambio de Icono a Reportes
-        btnReportes.setToolTipText("Reportes");
-        btnReportes.addActionListener(e -> mostrarMenuReportes(btnReportes));
-        
-        toolBar.add(btnUsuarios);
-        toolBar.add(btnRoles);
-        toolBar.addSeparator();
-        toolBar.add(btnReportes);
-        
-        // Solo mostrar botones de administración si el usuario es administrador
-        btnUsuarios.setVisible(userController.esAdministrador(usuarioActual));
-        btnRoles.setVisible(userController.esAdministrador(usuarioActual));
-        
-        mainPanel.add(toolBar, BorderLayout.NORTH);
-    }
-    
-    private void configurarEventos() {
-        // Configurar evento de cierre de ventana
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                confirmarSalida();
-            }
-        });
-        
-        // Registrar acciones globales
-        registerKeyStrokes();
-        
-        // Configurar timer para actualizar la barra de estado
-        new Timer(60000, e -> actualizarStatusBar()).start();
-    }
-    
-    private void registerKeyStrokes() {
-        // Registrar atajo Ctrl+Q para salir
-        KeyStroke salirKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Q, 
-            InputEvent.CTRL_DOWN_MASK);
-        getRootPane().registerKeyboardAction(
-            e -> confirmarSalida(),
-            "salir",
-            salirKeyStroke,
-            JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-        
-        // Registrar F1 para ayuda
-        KeyStroke ayudaKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0);
-        getRootPane().registerKeyboardAction(
-            e -> mostrarAyuda(),
-            "ayuda",
-            ayudaKeyStroke,
-            JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-        
-        // Registrar Ctrl+U para gestión de usuarios (solo admin)
+        // Reportes de Administración (solo admin)
         if (userController.esAdministrador(usuarioActual)) {
-            KeyStroke usuariosKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_U, 
-                InputEvent.CTRL_DOWN_MASK);
-            getRootPane().registerKeyboardAction(
-                e -> mostrarGestionUsuarios(),
-                "usuarios",
-                usuariosKeyStroke,
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-            );
+            JMenuItem menuReporteUsuarios = crearMenuItem("Reporte de Usuarios", "file-text",
+                null, e -> generarReporteUsuarios());
+            JMenuItem menuReporteRoles = crearMenuItem("Reporte de Roles", "file-text",
+                null, e -> generarReporteRoles());
+            JMenuItem menuReporteAccesos = crearMenuItem("Reporte de Accesos", "file-text",
+                null, e -> generarReporteAccesos());
+            
+            menuReportes.add(menuReporteUsuarios);
+            menuReportes.add(menuReporteRoles);
+            menuReportes.add(menuReporteAccesos);
+            menuReportes.addSeparator();
         }
-    }
-    
-    private void mostrarAyuda() {
-        JOptionPane.showMessageDialog(this,
-            "Atajos de teclado:\n\n" +
-            "F1 - Mostrar esta ayuda\n" +
-            "Ctrl+Q - Salir del sistema\n" +
-            (userController.esAdministrador(usuarioActual) ? 
-             "Ctrl+U - Gestión de usuarios\n" : "") +
-            "\nPara más información, consulte el manual del usuario.",
-            "Ayuda",
-            JOptionPane.INFORMATION_MESSAGE
-        );
-    }
-    
-     private void cerrarSesion() throws DatabaseException {
-        int opcion = JOptionPane.showConfirmDialog(
-            this,
-            "¿Está seguro que desea cerrar sesión?",
-            "Cerrar Sesión",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE
-        );
-
-        if (opcion == JOptionPane.YES_OPTION) {
-            dispose();
-            userController.logout();
-            // Mostrar ventana de login
-            LoginView.mostrar(userController);
-        }
-    }
-      
-    private void configurarStatusBar() {
-        // Mostrar información del usuario en la barra de estado
-        actualizarStatusBar();
         
-        // Timer para actualizar la hora cada minuto
-        new Timer(60000, e -> actualizarStatusBar()).start();
-    }
-    
-
-    // Métodos para cambiar el contenido principal
-    private void cambiarPanel(JPanel nuevoPanel, String titulo) {
-        contentPanel.removeAll();
-        contentPanel.add(new JLabel(titulo, SwingConstants.CENTER), BorderLayout.NORTH);
-        contentPanel.add(nuevoPanel, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-        actualizarStatusBar();
-    }
-
-    private void mostrarPanelBienvenida() {
-        JPanel panelBienvenida = new JPanel(new BorderLayout(10, 10));
-        panelBienvenida.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Mensaje de bienvenida
-        JLabel lblBienvenida = new JLabel("¡Bienvenido al Sistema RINTISA!");
-        lblBienvenida.setFont(new Font("Arial", Font.BOLD, 24));
-        lblBienvenida.setHorizontalAlignment(SwingConstants.CENTER);
-
-        // Información del usuario
-        JPanel infoPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(5, 5, 5, 5);
-
-        infoPanel.add(new JLabel("Usuario: " + usuarioActual.getNombre() + " " + 
-                                usuarioActual.getApellido()), gbc);
-        gbc.gridy++;
-        infoPanel.add(new JLabel("Rol: " + usuarioActual.getRol().getNombre()), gbc);
-        gbc.gridy++;
-        infoPanel.add(new JLabel("Último acceso: " + 
-                     (usuarioActual.getUltimoAcceso() != null ? 
-                      usuarioActual.getUltimoAcceso().toString() : "Primer acceso")), gbc);
-
-        panelBienvenida.add(lblBienvenida, BorderLayout.NORTH);
-        panelBienvenida.add(infoPanel, BorderLayout.CENTER);
-
-        cambiarPanel(panelBienvenida, "Inicio");
-    }
-
-    // Métodos para mostrar diferentes secciones
-    private void mostrarGestionUsuarios() {
-        try {
-            // Verificar si el usuario es administrador
-            if (!userController.esAdministrador(usuarioActual)) {
-                JOptionPane.showMessageDialog(this,
-                    "No tiene permisos para acceder a esta función",
-                    "Acceso Denegado",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // Limpiar panel de contenido
-            contentPanel.removeAll();
-
-            // Crear y agregar el panel de gestión de usuarios
-            UsuariosView usuariosView = new UsuariosView(userController);
-            contentPanel.add(usuariosView, BorderLayout.CENTER);
-
-            // Actualizar la interfaz
-            contentPanel.revalidate();
-            contentPanel.repaint();
+      /*  // Reportes de Almacén
+        if (tieneAccesoAlmacen()) {
+            JMenuItem menuReporteRecepcion = crearMenuItem("Reporte de Recepciones", "file-text",
+                null, e -> generarReporteRecepciones());
+            JMenuItem menuReporteProductos = crearMenuItem("Reporte de Productos", "file-text",
+                null, e -> generarReporteProductos());
             
-            logger.info("Panel de gestión de usuarios mostrado");
-            
-        } catch (Exception e) {
-            logger.error("Error al mostrar gestión de usuarios", e);
-            JOptionPane.showMessageDialog(this,
-                "Error al abrir la gestión de usuarios: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+            menuReportes.add(menuReporteRecepcion);
+            menuReportes.add(menuReporteProductos);
         }
+        
+        if (menuReportes.getMenuComponentCount() > 0) {
+            menuBar.add(menuReportes);
+        }*/
     }
-
-    private void mostrarGestionRoles() {
-        if (!userController.esAdministrador(usuarioActual)) {
-            mostrarMensajeError("No tiene permisos para acceder a esta función");
-            return;
-        }
-        try {
-            RolesView rolesView = new RolesView(userController.getRolController());
-            cambiarPanel(rolesView, "Gestión de Roles");
-        } catch (Exception e) {
-            logger.error("Error al mostrar gestión de roles", e);
-            mostrarMensajeError("Error al cargar la gestión de roles: " + e.getMessage());
-        }
-    }
-    
-    private void mostrarMantenimientoProductos() {
-    try {
-        // Inicializar DAOs necesarios
-        ProductoDao productoDao = new ProductoDao();
-
-        // Inicializar Servicios
-        IProductoService productoService = new ProductoService(productoDao);
-
-        // Crear el controlador
-        ProductoController controller = new ProductoController(productoService);
-
-        // Crear la vista
-        ProductosView vista = new ProductosView(controller);
-
-        // Limpiar y mostrar la nueva vista
-        contentPanel.removeAll();
-        contentPanel.add(vista);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-
-        // Actualizar el título de la ventana
-        setTitle("RINTISA - Mantenimiento de Productos");
-
-    } catch (Exception e) {
-        logger.error("Error al mostrar el mantenimiento de productos", e);
-        JOptionPane.showMessageDialog(
-            this,
-            "Error al abrir el mantenimiento de productos: " + e.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE
-        );
-    }
-}
-
-    
-    
-    
-    
-    
 
     // Métodos para reportes
     private void generarReporteUsuarios() {
@@ -580,7 +570,7 @@ public class MainView extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
-
+    
     private void generarReporteRoles() {
           try {
             java.util.List<Rol> roles = rolService.listarTodos();
@@ -594,7 +584,7 @@ public class MainView extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
-
+    
     private void generarReporteAccesos() {
         try {
             String rutaReporte = ReportGenerator.generarReporteAccesos(
@@ -610,175 +600,453 @@ public class MainView extends JFrame {
         }
     }
     
-    
-    
-    
-    
-    
-    
 
-    // Métodos de utilidad
-    private void actualizarStatusBar() {
-        String fecha = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm")
-                          .format(new java.util.Date());
-        statusBar.setText(" Usuario: " + usuarioActual.getUsername() + 
-                         " | Rol: " + usuarioActual.getRol().getNombre() + 
-                         " | Fecha: " + fecha);
+
+    
+    
+    
+    
+    
+    /**
+     * Configura el menú Ayuda
+     */
+    private void configurarMenuAyuda() {
+        menuAyuda = new JMenu("Ayuda");
+        menuAyuda.setMnemonic(KeyEvent.VK_Y);
+        
+        JMenuItem menuAcercaDe = crearMenuItem("Acerca de...", "info",
+            KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0),
+            e -> mostrarAcercaDe());
+            
+        menuAyuda.add(menuAcercaDe);
+        
+        menuBar.add(menuAyuda);
     }
 
-    private void mostrarDialogoCambiarPassword() {
-        JPasswordField oldPass = new JPasswordField();
-        JPasswordField newPass = new JPasswordField();
-        JPasswordField confirmPass = new JPasswordField();
+    /**
+     * Crea un item de menú con icono y atajo de teclado
+     */
+    private JMenuItem crearMenuItem(String texto, String iconName, 
+                                  KeyStroke accelerator, ActionListener action) {
+        JMenuItem menuItem = new JMenuItem(texto);
+        
+        try {
+            ImageIcon icon = IconManager.getIcon(iconName, IconManager.SMALL);
+            if (icon != null) {
+                menuItem.setIcon(icon);
+            }
+        } catch (Exception e) {
+            logger.warn("No se pudo cargar el icono: {}", iconName);
+        }
+        
+        if (accelerator != null) {
+            menuItem.setAccelerator(accelerator);
+        }
+        
+        menuItem.addActionListener(action);
+        return menuItem;
+    }
 
-        Object[] mensaje = {
-            "Contraseña actual:", oldPass,
-            "Nueva contraseña:", newPass,
-            "Confirmar contraseña:", confirmPass
-        };
+    /**
+     * Verifica si el usuario tiene acceso al módulo de almacén
+     */
+    private boolean tieneAccesoAlmacen() {
+        return tieneAcceso(Pantalla.RECEPCION) || 
+               tieneAcceso(Pantalla.PRODUCTOS);
+    }
 
-        int opcion = JOptionPane.showConfirmDialog(
-            this, mensaje, "Cambiar Contraseña", 
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE
+    /**
+     * Navega a una pantalla específica
+     */
+    public void navegarAPantalla(Pantalla pantalla) {
+        try {
+            if (!tieneAcceso(pantalla)) {
+                throw new SecurityException("No tiene acceso a esta pantalla");
+            }
+
+            contentPanel.removeAll();
+            actualizarTitulo(pantalla);
+            
+            JPanel nuevaVista = crearVista(pantalla);
+            if (nuevaVista != null) {
+                contentPanel.add(nuevaVista, BorderLayout.CENTER);
+                contentPanel.revalidate();
+                contentPanel.repaint();
+                actualizarStatusBar();
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error al navegar a pantalla: {}", pantalla, e);
+            mostrarError("Error al cargar la pantalla: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Crea la vista correspondiente a una pantalla
+     */
+    private JPanel crearVista(Pantalla pantalla) throws Exception {
+    switch (pantalla) {
+        case USUARIOS:
+            return new UsuariosView(userController);
+            
+        case ROLES:
+            return new RolesView(rolController);
+            
+        case PERMISOS:
+            return new PermisosPantallaView(
+                permisoPantallaController,
+                permisosPantallaService,
+                usuarioActual.getRol().getNombre()
+            );
+            
+        case RECEPCION:
+            // Inicializar DAOs necesarios
+            ProveedorDao proveedorDao = new ProveedorDao();
+            
+            // Inicializar Servicios adicionales
+            IProveedorService proveedorService = new ProveedorService(proveedorDao);
+            RecepcionReporteService reporteService = new RecepcionReporteService(recepcionService);
+            
+            // Crear controlador con todos los servicios necesarios
+            RecepcionMercanciaController recepcionController = new RecepcionMercanciaController(
+                recepcionService,
+                productoService,
+                proveedorService,
+                userController,
+                reporteService
+            );
+            
+            return new RecepcionMercanciaView(recepcionController);
+            
+        case PRODUCTOS:
+            ProductoController productoController = new ProductoController(productoService);
+            return new ProductosView(productoController);
+            
+        default:
+            logger.warn("Pantalla no implementada: {}", pantalla);
+            return new JPanel();
+    }
+}
+    
+     /**
+     * Configura los eventos globales
+     */
+    private void configurarEventos() {
+        // Timer para actualizar la barra de estado cada minuto
+        new Timer(60000, e -> actualizarStatusBar()).start();
+        
+        // Configurar acciones globales
+        configurarAccionesTeclado();
+    }
+
+    /**
+     * Configura acciones globales de teclado
+     */
+    private void configurarAccionesTeclado() {
+        JRootPane rootPane = getRootPane();
+        
+        // ESC para mostrar diálogo de salida
+        rootPane.registerKeyboardAction(
+            e -> confirmarSalida(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
         );
+        
+        // F5 para refrescar la vista actual
+        rootPane.registerKeyboardAction(
+            e -> refrescarVistaActual(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+    }
 
-        if (opcion == JOptionPane.OK_OPTION) {
-            try {
+    /**
+     * Muestra el panel de bienvenida
+     */
+    private void mostrarPanelBienvenida() {
+        JPanel bienvenidaPanel = new JPanel(new BorderLayout(10, 10));
+        bienvenidaPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Título de bienvenida
+        JLabel lblBienvenida = new JLabel("¡Bienvenido al Sistema RINTISA!");
+        lblBienvenida.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
+        lblBienvenida.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Panel de información
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        
+        // Información del usuario
+        infoPanel.add(new JLabel("Usuario: " + usuarioActual.getNombre() + 
+            " " + usuarioActual.getApellido()), gbc);
+        
+        gbc.gridy++;
+        infoPanel.add(new JLabel("Rol: " + usuarioActual.getRol().getNombre()), gbc);
+        
+        gbc.gridy++;
+        infoPanel.add(new JLabel("Último acceso: " + 
+            (usuarioActual.getUltimoAcceso() != null ? 
+                usuarioActual.getUltimoAcceso().toString() : "Primer acceso")), gbc);
+        
+        // Logo de la empresa (si está disponible)
+        try {
+            ImageIcon logoIcon = IconManager.getIcon("logo", IconManager.LARGE);
+            if (logoIcon != null) {
+                JLabel lblLogo = new JLabel(logoIcon);
+                lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
+                bienvenidaPanel.add(lblLogo, BorderLayout.NORTH);
+            }
+        } catch (Exception e) {
+            logger.warn("No se pudo cargar el logo", e);
+        }
+        
+        bienvenidaPanel.add(lblBienvenida, BorderLayout.CENTER);
+        bienvenidaPanel.add(infoPanel, BorderLayout.SOUTH);
+        
+        contentPanel.removeAll();
+        contentPanel.add(bienvenidaPanel);
+        contentPanel.revalidate();
+        contentPanel.repaint();
+        
+        actualizarTitulo(null);
+        actualizarStatusBar();
+    }
+
+    /**
+     * Actualiza el título de la ventana
+     */
+    private void actualizarTitulo(Pantalla pantalla) {
+        StringBuilder titulo = new StringBuilder("Sistema RINTISA");
+        
+        if (pantalla != null) {
+            titulo.append(" - ").append(pantalla.getNombre());
+        }
+        
+        if (usuarioActual != null) {
+            titulo.append(" - ").append(usuarioActual.getNombre())
+                  .append(" ").append(usuarioActual.getApellido());
+        }
+        
+        setTitle(titulo.toString());
+    }
+
+    /**
+     * Refresca la vista actual
+     */
+    private void refrescarVistaActual() {
+        Component component = contentPanel.getComponent(0);
+        if (component instanceof Refreshable) {
+            ((Refreshable) component).refresh();
+        }
+    }
+
+    /**
+     * Muestra el perfil del usuario
+     */
+    private void mostrarPerfil() {
+        try {
+            JDialog dialog = new JDialog(this, "Mi Perfil", true);
+            dialog.setLayout(new BorderLayout());
+            
+            JPanel panel = new JPanel(new GridBagLayout());
+            panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.insets = new Insets(5, 5, 5, 5);
+            
+            // Datos del usuario
+            panel.add(new JLabel("Usuario: " + usuarioActual.getUsername()), gbc);
+            gbc.gridy++;
+            panel.add(new JLabel("Nombre: " + usuarioActual.getNombre()), gbc);
+            gbc.gridy++;
+            panel.add(new JLabel("Apellido: " + usuarioActual.getApellido()), gbc);
+            gbc.gridy++;
+            panel.add(new JLabel("Rol: " + usuarioActual.getRol().getNombre()), gbc);
+            gbc.gridy++;
+            panel.add(new JLabel("Último acceso: " + usuarioActual.getUltimoAcceso()), gbc);
+            
+            // Botón cerrar
+            JButton btnCerrar = new JButton("Cerrar");
+            btnCerrar.addActionListener(e -> dialog.dispose());
+            
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            buttonPanel.add(btnCerrar);
+            
+            dialog.add(panel, BorderLayout.CENTER);
+            dialog.add(buttonPanel, BorderLayout.SOUTH);
+            
+            dialog.pack();
+            dialog.setLocationRelativeTo(this);
+            dialog.setVisible(true);
+            
+        } catch (Exception e) {
+            logger.error("Error al mostrar perfil", e);
+            mostrarError("Error al mostrar perfil: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Muestra el diálogo para cambiar contraseña
+     */
+    private void mostrarDialogoCambiarPassword() {
+        try {
+            // Campos de contraseña
+            JPasswordField oldPass = new JPasswordField(20);
+            JPasswordField newPass = new JPasswordField(20);
+            JPasswordField confirmPass = new JPasswordField(20);
+            
+            Object[] message = {
+                "Contraseña actual:", oldPass,
+                "Nueva contraseña:", newPass,
+                "Confirmar contraseña:", confirmPass
+            };
+            
+            int option = JOptionPane.showConfirmDialog(
+                this, 
+                message, 
+                "Cambiar Contraseña",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+            );
+            
+            if (option == JOptionPane.OK_OPTION) {
                 String oldPassStr = new String(oldPass.getPassword());
                 String newPassStr = new String(newPass.getPassword());
                 String confirmPassStr = new String(confirmPass.getPassword());
-
+                
+                // Validar contraseñas
                 if (!newPassStr.equals(confirmPassStr)) {
-                    mostrarMensajeError("Las nuevas contraseñas no coinciden");
-                    return;
+                    throw new IllegalArgumentException("Las nuevas contraseñas no coinciden");
                 }
-
-                userController.cambiarPassword(
-                    usuarioActual.getId(), oldPassStr, newPassStr
-                );
-                mostrarMensajeInfo("Contraseña cambiada exitosamente");
-
-            } catch (Exception e) {
-                logger.error("Error al cambiar contraseña", e);
-                mostrarMensajeError("Error al cambiar contraseña: " + e.getMessage());
+                
+                // Cambiar contraseña
+                userController.cambiarPassword(usuarioActual.getId(), oldPassStr, newPassStr);
+                
+                mostrarMensaje("Contraseña cambiada exitosamente");
             }
-        }
-    }
-
-    private void confirmarSalida() {
-        int opcion = JOptionPane.showConfirmDialog(
-            this,
-            "¿Está seguro que desea salir del sistema?",
-            "Confirmar Salida",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE
-        );
-
-        if (opcion == JOptionPane.YES_OPTION) {
-            logger.info("Usuario {} cerrando sesión", usuarioActual.getUsername());
-            dispose();
-            System.exit(0);
-        }
-    }
-    
-    private boolean tieneRolAlmacen(Usuario usuario) {
-    return usuario != null && 
-           usuario.getRol() != null && 
-           //"ALMACEN".equalsIgnoreCase(usuario.getRol().getNombre());
-           ("ALMACEN".equalsIgnoreCase(usuario.getRol().getNombre()) ||
-            "ADMIN".equalsIgnoreCase(usuario.getRol().getNombre())); 
             
-}
+        } catch (Exception e) {
+            logger.error("Error al cambiar contraseña", e);
+            mostrarError("Error al cambiar contraseña: " + e.getMessage());
+        }
+    }
 
-    private void mostrarRecepcionMercancia() {
-    try {
-        // Inicializar los DAOs necesarios
-        ProveedorDao proveedorDao = new ProveedorDao();
-        ProductoDao productoDao = new ProductoDao();
-        RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
+    /**
+     * Cierra la sesión actual
+     */
+    private void cerrarSesion() {
+        try {
+            int option = JOptionPane.showConfirmDialog(
+                this,
+                "¿Está seguro que desea cerrar la sesión?",
+                "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+            
+            if (option == JOptionPane.YES_OPTION) {
+                userController.logout();
+                dispose();
+                
+                // Mostrar ventana de login
+                LoginView.mostrar(userController);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error al cerrar sesión", e);
+            mostrarError("Error al cerrar sesión: " + e.getMessage());
+        }
+    }
 
-        // Inicializar los Servicios
-        IProveedorService proveedorService = new ProveedorService(proveedorDao);
-        IProductoService productoService = new ProductoService(productoDao);
-        IRecepcionMercanciaService recepcionService = new RecepcionMercanciaService(
-            recepcionDao, 
-            productoDao);
+    /**
+     * Muestra el diálogo Acerca de
+     */
+    private void mostrarAcercaDe() {
+        JDialog dialog = new JDialog(this, "Acerca de", true);
+        dialog.setLayout(new BorderLayout());
+        
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        
+        // Logo
+        try {
+            ImageIcon logo = IconManager.getIcon("logo", IconManager.LARGE);
+            if (logo != null) {
+                panel.add(new JLabel(logo), gbc);
+                gbc.gridy++;
+            }
+        } catch (Exception e) {
+            logger.warn("No se pudo cargar el logo", e);
+        }
+        
+        // Información
+        JLabel lblTitulo = new JLabel("Sistema RINTISA");
+        lblTitulo.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 16));
+        panel.add(lblTitulo, gbc);
+        
+        gbc.gridy++;
+        panel.add(new JLabel("Versión 1.0"), gbc);
+        
+        gbc.gridy++;
+        panel.add(new JLabel("© 2024 Grupo08@UTP"), gbc);
+        
+        gbc.gridy++;
+        panel.add(new JLabel("Todos los derechos reservados"), gbc);
+        
+        // Botón cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.addActionListener(e -> dialog.dispose());
+        
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(btnCerrar, BorderLayout.SOUTH);
+        
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
 
-        // Crear el servicio de reportes
-        RecepcionReporteService reporteService = new RecepcionReporteService(recepcionService);
-
-        // Crear el controlador con todos los servicios necesarios
-        RecepcionMercanciaController controller = new RecepcionMercanciaController(
-            recepcionService,
-            productoService,
-            proveedorService,
-            userController,
-            reporteService
-        );
-
-        // Crear la vista
-        RecepcionMercanciaView vista = new RecepcionMercanciaView(controller);
-
-        // Limpiar y mostrar la nueva vista
-        contentPanel.removeAll();
-        contentPanel.add(vista);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-
-        // Actualizar el título de la ventana
-        setTitle("RINTISA - Recepción de Mercancía");
-
-    } catch (Exception e) {
-        logger.error("Error al mostrar la vista de Recepción de Mercancía", e);
+    /**
+     * Muestra un mensaje de error
+     */
+    private void mostrarError(String mensaje) {
         JOptionPane.showMessageDialog(
             this,
-            "Error al abrir la vista de Recepción de Mercancía: " + e.getMessage(),
+            mensaje,
             "Error",
             JOptionPane.ERROR_MESSAGE
-            );
-        }
-}
-       
-    private void mostrarAcercaDe() {
+        );
+    }
+
+    /**
+     * Muestra un mensaje informativo
+     */
+    private void mostrarMensaje(String mensaje) {
         JOptionPane.showMessageDialog(
             this,
-            "Sistema RINTISA\nVersión 1.0\n\n" +
-            "Desarrollado por Grupo08@UTP\n" +
-            "© 2024 Todos los derechos reservados",
-            "Acerca de",
+            mensaje,
+            "Información",
             JOptionPane.INFORMATION_MESSAGE
         );
     }
 
-    private void mostrarMensajeError(String mensaje) {
-        JOptionPane.showMessageDialog(
-            this, mensaje, "Error", JOptionPane.ERROR_MESSAGE
-        );
+    /**
+     * Interfaz para componentes actualizables
+     */
+    public interface Refreshable {
+        void refresh();
     }
-
-    private void mostrarMensajeInfo(String mensaje) {
-        JOptionPane.showMessageDialog(
-            this, mensaje, "Información", JOptionPane.INFORMATION_MESSAGE
-        );
-    }
-
-    private void mostrarMenuReportes(Component componente) {
-        JPopupMenu menuPopup = new JPopupMenu();
-        
-        JMenuItem itemReporteUsuarios = new JMenuItem("Reporte de Usuarios");
-        itemReporteUsuarios.addActionListener(e -> generarReporteUsuarios());
-        
-        JMenuItem itemReporteRoles = new JMenuItem("Reporte de Roles");
-        itemReporteRoles.addActionListener(e -> generarReporteRoles());
-        
-        JMenuItem itemReporteAccesos = new JMenuItem("Reporte de Accesos");
-        itemReporteAccesos.addActionListener(e -> generarReporteAccesos());
-        
-        menuPopup.add(itemReporteUsuarios);
-        menuPopup.add(itemReporteRoles);
-        menuPopup.add(itemReporteAccesos);
-        
-        menuPopup.show(componente, 0, componente.getHeight());
-    }
+      
 }
-/////MAIN FUNCIONANDO 

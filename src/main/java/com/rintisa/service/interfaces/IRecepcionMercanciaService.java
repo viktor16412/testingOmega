@@ -6,7 +6,8 @@ import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.model.DetalleRecepcion;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
-import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
+import com.rintisa.model.enums.EstadoRecepcion;
+import java.time.LocalDate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,7 +60,7 @@ public interface IRecepcionMercanciaService {
      * @param estado Estado de las recepciones a buscar
      * @return Lista de recepciones en el estado especificado
      */
-    List<RecepcionMercancia> listarPorEstado(RecepcionMercancia.EstadoRecepcion estado) 
+    List<RecepcionMercancia> listarPorEstado(EstadoRecepcion estado) 
         throws DatabaseException;
 
     /**
@@ -135,7 +136,7 @@ public interface IRecepcionMercanciaService {
      */
     default boolean esModificable(Long recepcionId) throws DatabaseException {
         Optional<RecepcionMercancia> recepcion = buscarPorId(recepcionId);
-        return recepcion.map(r -> r.getEstado() == RecepcionMercancia.EstadoRecepcion.PENDIENTE)
+        return (boolean) recepcion.map(r -> r.getEstado() == EstadoRecepcion.PENDIENTE)
                        .orElse(false);
     }
 
@@ -176,6 +177,23 @@ public interface IRecepcionMercanciaService {
     
     void verificarRecepcion(Long recepcionId, String observaciones) 
         throws DatabaseException, ValidationException;
+    
+    
+    // Métodos de búsqueda específicos para reportes
+    List<RecepcionMercancia> buscarPorRangoFechas(LocalDate fechaInicio, LocalDate fechaFin) 
+        throws DatabaseException;
+    List<RecepcionMercancia> buscarPorProveedor(Long proveedorId) throws DatabaseException;
+  //  List<RecepcionMercancia> buscarPorEstado(EstadoRecepcion estado) throws DatabaseException;
+  //  List<RecepcionMercancia> buscarPorUsuario(Long usuarioId) throws DatabaseException;
+    
+    // Métodos de negocio
+  //  void procesarRecepcion(Long recepcionId) throws DatabaseException;
+  //  void anularRecepcion(Long recepcionId) throws DatabaseException;
+    
+    // Métodos para reportes y estadísticas
+  //  Map<String, Double> obtenerEstadisticasPorMes(int año, int mes) throws DatabaseException;
+   // Map<Long, Integer> obtenerRecepcionesPorProveedor(LocalDate fechaInicio, LocalDate fechaFin) 
+    //    throws DatabaseException;
 
     
 }

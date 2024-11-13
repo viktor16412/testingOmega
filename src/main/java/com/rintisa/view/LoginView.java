@@ -3,19 +3,24 @@ package com.rintisa.view;
 
 ///////////VERISON CON ICONOS FUNCIONA//////////////////////////
 import com.rintisa.config.DatabaseConfig;
+import com.rintisa.controller.PermisoPantallaController;
 import com.rintisa.controller.UsuarioController;
+import com.rintisa.dao.impl.PermisosPantallaDao;
 import com.rintisa.dao.impl.ProductoDao;
 import com.rintisa.dao.impl.RecepcionMercanciaDao;
 import com.rintisa.dao.impl.RolDao;
 import com.rintisa.dao.impl.UsuarioDao;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.model.Usuario;
+import com.rintisa.service.impl.PermisosPantallaService;
 import com.rintisa.service.impl.ProductoService;
 import com.rintisa.service.impl.RecepcionMercanciaService;
 import com.rintisa.service.impl.RolService;
 import com.rintisa.service.impl.UsuarioService;
+import com.rintisa.service.interfaces.IPermisosPantallaService;
 import com.rintisa.util.IconManager;
 import com.rintisa.util.LogUtils;
+import com.rintisa.util.PermissionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +33,9 @@ public class LoginView extends JFrame {
     
     private static final Logger logger = LoggerFactory.getLogger(LoginView.class);
     private static final long serialVersionUID = 1L;
-    
+     private IPermisosPantallaService permisosPantallaService;
     private final UsuarioController userController;
+    private PermisoPantallaController permisoPantallaController;
     private JTextField txtUsuario;
     private JPasswordField txtPassword;
     private JButton btnIngresar;
@@ -45,6 +51,21 @@ public class LoginView extends JFrame {
                 throw new IllegalArgumentException("El controlador no puede ser null");
             }
             this.userController = controlador;
+            
+             // Inicializar DAOs
+            PermisosPantallaDao permisosPantallaDao = new PermisosPantallaDao();
+            RolDao rolDao = new RolDao();
+
+            // Inicializar Servicios
+            RolService rolService = new RolService(rolDao);
+            this.permisosPantallaService = new PermisosPantallaService(permisosPantallaDao);
+            
+            // Inicializar Controladores
+            this.permisoPantallaController = new PermisoPantallaController(
+                permisosPantallaService,
+                rolService,
+                null  // Usuario actual será establecido después del login
+            );
             
             logger.debug("Inicializando componentes");
             initComponents();
@@ -246,6 +267,8 @@ public class LoginView extends JFrame {
         worker.execute();
     }
     
+    
+    /*LOGINEXITOSO FUNCIONANDO 
     private void loginExitoso() {
            logger.info("Login exitoso para usuario: {}", txtUsuario.getText());
     try {
@@ -257,6 +280,7 @@ public class LoginView extends JFrame {
             usuarioActual.getUsername(), 
             usuarioActual.getRol() != null ? usuarioActual.getRol().getNombre() : "Sin rol");
 
+                
         // Ocultar ventana de login
         setVisible(false);
 
@@ -268,14 +292,22 @@ public class LoginView extends JFrame {
                 
                 // Inicializar Servicios
                 ProductoService productoService = new ProductoService(productoDao);
-                RecepcionMercanciaService recepcionService = 
-                    new RecepcionMercanciaService(recepcionDao, productoDao);
-
+                RecepcionMercanciaService recepcionService = new RecepcionMercanciaService(recepcionDao, productoDao);
+                
+                RolDao rolDao = new RolDao();
+                PermisosPantallaDao permisosPantallaDao = new PermisosPantallaDao();
+        
+                RolService rolService = new RolService(rolDao);
+                PermisosPantallaService permisosPantallaService = new PermisosPantallaService(permisosPantallaDao);
+                
                 // Crear y mostrar ventana principal
                 MainView mainView = new MainView(
                     userController,
                     productoService,
+                        permisoPantallaController,
+                        permisosPantallaService,
                     recepcionService
+                    
                 );
 
                 mainView.setVisible(true);
@@ -306,7 +338,59 @@ public class LoginView extends JFrame {
         txtPassword.setText("");
         txtUsuario.requestFocus();
     }
+}*/
+    private void loginExitoso() {
+     try {
+            Usuario usuarioActual = userController.getUsuarioActual();
+            if (usuarioActual == null) {
+                throw new IllegalStateException("Usuario no encontrado después del login");
+            }
+            
+            setVisible(false);
+            
+            // Actualizar el usuario actual en el controlador de permisos
+            permisoPantallaController = new PermisoPantallaController(
+                permisosPantallaService,
+                userController.getRolService(),
+                usuarioActual
+            );
+            
+            // Inicializar DAOs
+            ProductoDao productoDao = new ProductoDao();
+            RecepcionMercanciaDao recepcionDao = new RecepcionMercanciaDao();
+            
+            // Inicializar Servicios
+            ProductoService productoService = new ProductoService(productoDao);
+            RecepcionMercanciaService recepcionService = new RecepcionMercanciaService(
+                recepcionDao, 
+                productoDao
+            );
+            
+            // Validar y redirigir usando el PermissionHandler
+            PermissionHandler.validarYRedirigir(
+                usuarioActual,
+                userController,
+                productoService,
+                permisoPantallaController,
+                permisosPantallaService,
+                recepcionService,
+                this
+            );
+            
+        } catch (Exception e) {
+            logger.error("Error al iniciar sesión", e);
+            JOptionPane.showMessageDialog(
+                this,
+                "Error al iniciar sesión:\n" + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            setVisible(true);
+            txtPassword.setText("");
+            txtUsuario.requestFocus();
+        }
 }
+    
 
     // Método auxiliar para crear servicios
     private void inicializarServicios() throws DatabaseException {

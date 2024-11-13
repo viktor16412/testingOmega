@@ -7,8 +7,12 @@ import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
 import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.model.DetalleRecepcion;
+
 import com.rintisa.model.Producto;
-import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
+import com.rintisa.model.Proveedor;
+import com.rintisa.model.RecepcionItem;
+import com.rintisa.model.enums.EstadoRecepcion;
+import com.rintisa.model.Usuario;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,40 +31,93 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 
     @Override
     public RecepcionMercancia save(RecepcionMercancia recepcion) throws DatabaseException {
-        String sql = "INSERT INTO recepciones_mercancia (numero_recepcion, fecha_recepcion, " +
-                    "proveedor_id, usuario_id, numero_orden_compra, estado, observaciones) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        logger.debug("Guardando recepción: {}", recepcion);
+        
+        String sql = "INSERT INTO recepcion_mercancia ("
+           + "numero_recepcion, numero_documento, numero_orden_compra, "
+           + "numero_guia_remision, fecha, proveedor_id, usuario_id, "
+           + "responsable_id, estado, observaciones, "
+           + "fecha_creacion, usuario_creacion"
+           + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, recepcion.getNumeroRecepcion());
-            stmt.setTimestamp(2, Timestamp.valueOf(recepcion.getFechaRecepcion()));
-            stmt.setString(3, recepcion.getProveedor());
-            stmt.setLong(4, recepcion.getResponsable().getId());
-            stmt.setString(5, recepcion.getNumeroOrdenCompra());
-            stmt.setString(6, recepcion.getEstado().name());
-            stmt.setString(7, recepcion.getObservaciones());
+            // Generar número de recepción si no existe
+            if (recepcion.getNumeroRecepcion() == null || recepcion.getNumeroRecepcion().isEmpty()) {
+                recepcion.generarNumeroRecepcion();
+            }
+            
+            int index = 1;
+            stmt.setString(index++, recepcion.getNumeroRecepcion());
+            stmt.setString(index++, recepcion.getNumeroDocumento());
+            stmt.setString(index++, recepcion.getNumeroOrdenCompra());
+            stmt.setString(index++, recepcion.getNumeroGuiaRemision());
+            stmt.setTimestamp(index++, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setLong(index++, recepcion.getProveedor().getId());
+            stmt.setLong(index++, recepcion.getUsuario().getId());
+            stmt.setLong(index++, recepcion.getResponsable().getId());
+            stmt.setString(index++, EstadoRecepcion.PENDIENTE.toString());
+            stmt.setString(index++, recepcion.getObservaciones());
+            stmt.setTimestamp(index++, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setLong(index, recepcion.getUsuario().getId());  // usuario_creacion es el mismo que registra
 
             int affectedRows = stmt.executeUpdate();
+
             if (affectedRows == 0) {
-                throw new DatabaseException("Creating reception failed, no rows affected.");
+                throw new DatabaseException("Error al crear la recepción, no se insertaron registros.");
             }
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     recepcion.setId(generatedKeys.getLong(1));
                 } else {
-                    throw new DatabaseException("Creating reception failed, no ID obtained.");
+                    throw new DatabaseException("Error al crear la recepción, no se obtuvo el ID.");
                 }
             }
 
+            // Guardar los items
+            saveItems(conn, recepcion);
+
+            logger.info("Recepción guardada exitosamente con ID: {}", recepcion.getId());
             return recepcion;
+
         } catch (SQLException e) {
-            logger.error("Error saving reception", e);
-            throw new DatabaseException("Error saving reception: " + e.getMessage());
+            logger.error("Error al guardar la recepción", e);
+            throw new DatabaseException("Error al guardar la recepción: " + e.getMessage());
         }
     }
+
+    private void saveItems(Connection conn, RecepcionMercancia recepcion) throws DatabaseException {
+        String sql = "INSERT INTO recepcion_item ("
+           + "recepcion_id, producto_id, cantidad, precio_unitario, "
+           + "lote, fecha_vencimiento, observaciones"
+           + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (RecepcionItem item : recepcion.getItems()) {
+                int index = 1;
+                stmt.setLong(index++, recepcion.getId());
+                stmt.setLong(index++, item.getProducto().getId());
+                stmt.setInt(index++, item.getCantidad());
+                stmt.setDouble(index++, item.getPrecioUnitario());
+                stmt.setString(index++, item.getLote());
+                stmt.setTimestamp(index++, 
+                    item.getFechaVencimiento() != null ? 
+                    Timestamp.valueOf(item.getFechaVencimiento()) : null);
+                stmt.setString(index, item.getObservaciones());
+                
+                stmt.addBatch();
+            }
+            
+            stmt.executeBatch();
+            
+        } catch (SQLException e) {
+            logger.error("Error al guardar los items de la recepción", e);
+            throw new DatabaseException("Error al guardar los items: " + e.getMessage());
+        }
+    }
+    
     
     @Override
     public Optional<RecepcionMercancia> findById(Long id) throws DatabaseException {
@@ -174,15 +231,15 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
         }
         
         // Manejar fecha de verificación
-        if (recepcion.getFechaVerificacion() != null) {
-            stmt.setTimestamp(3, Timestamp.valueOf(recepcion.getFechaVerificacion()));
+        if (recepcion.getFechaCreacion() != null) {
+            stmt.setTimestamp(3, Timestamp.valueOf(recepcion.getFechaCreacion()));
         } else {
             stmt.setNull(3, Types.TIMESTAMP);
         }
 
         // Manejar fecha de finalización
-        if (recepcion.getFechaFinalizacion() != null) {
-            stmt.setTimestamp(4, Timestamp.valueOf(recepcion.getFechaFinalizacion()));
+        if (recepcion.getFechaModificacion()!= null) {
+            stmt.setTimestamp(4, Timestamp.valueOf(recepcion.getFechaModificacion()));
         } else {
             stmt.setNull(4, Types.TIMESTAMP);
         }
@@ -212,8 +269,8 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     }
     
     @Override
-    public List<RecepcionMercancia> findByEstado(RecepcionMercancia.EstadoRecepcion estado) 
-        throws DatabaseException {
+    public List<RecepcionMercancia> findByEstado(EstadoRecepcion estado) throws DatabaseException {
+      
     logger.debug("Buscando recepciones por estado: {}", estado);
     
     String sql = "SELECT rm.*, u.username as responsable_username, " +
@@ -226,23 +283,22 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 
     List<RecepcionMercancia> recepciones = new ArrayList<>();
 
-    try (Connection conn = DatabaseConfig.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-        stmt.setString(1, estado.name());
-
-        try (ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                recepciones.add(mapResultSetToRecepcion(rs));
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, estado.name());
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    recepciones.add(mapResultSetToRecepcion(rs));
+                }
             }
-        }
-
-        logger.debug("Se encontraron {} recepciones en estado {}", recepciones.size(), estado);
-        return recepciones;
-
-    } catch (SQLException e) {
-        logger.error("Error al buscar recepciones por estado", e);
-        throw new DatabaseException("Error al buscar recepciones por estado: " + e.getMessage());
+            
+            return recepciones;
+            
+        } catch (SQLException e) {
+            logger.error("Error al buscar recepciones por estado", e);
+            throw new DatabaseException("Error al buscar recepciones: " + e.getMessage());
     }
 }
     
@@ -485,7 +541,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     @Override
     public List<RecepcionMercancia> search(String numeroRecepcion, String numeroOrdenCompra,
-                                     Long proveedorId, RecepcionMercancia.EstadoRecepcion estado,
+                                     Long proveedorId, EstadoRecepcion estado,
                                      LocalDateTime fechaInicio, LocalDateTime fechaFin) 
         throws DatabaseException {
             
@@ -656,7 +712,24 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
         }
     }
     
-    
+    private void loadItems(Connection conn, RecepcionMercancia recepcion) throws SQLException {
+        String sql = "SELECT i.*, p.nombre as producto_nombre "
+           + "FROM recepcion_item i "
+           + "INNER JOIN producto p ON i.producto_id = p.id "
+           + "WHERE i.recepcion_id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, recepcion.getId());
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<RecepcionItem> items = new ArrayList<>();
+                while (rs.next()) {
+                    items.add(mapResultSetToItem(rs));
+                }
+                recepcion.setItems(items);
+            }
+        }
+    }
 
     
     
@@ -963,7 +1036,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     
     @Override
-    public List<RecepcionMercancia.EstadoRecepcion> getHistorialEstados(Long recepcionId) 
+    public List<EstadoRecepcion> getHistorialEstados(Long recepcionId) 
         throws DatabaseException {
     String sql = "SELECT estado_anterior, estado_nuevo, fecha " +
                 "FROM recepcion_historial " +
@@ -974,11 +1047,11 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
          PreparedStatement stmt = conn.prepareStatement(sql)) {
 
         stmt.setLong(1, recepcionId);
-        List<RecepcionMercancia.EstadoRecepcion> historial = new ArrayList<>();
+        List<EstadoRecepcion> historial = new ArrayList<>();
         
         try (ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                historial.add(RecepcionMercancia.EstadoRecepcion.valueOf(
+                historial.add(EstadoRecepcion.valueOf(
                     rs.getString("estado_nuevo")));
             }
         }
@@ -991,7 +1064,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
     
     @Override
-    public void updateEstado(Long recepcionId, RecepcionMercancia.EstadoRecepcion estado, String observaciones) 
+    public void updateEstado(Long recepcionId, EstadoRecepcion estado, String observaciones) 
         throws DatabaseException {
     Connection conn = null;
     try {
@@ -1000,7 +1073,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 
         // Obtener estado actual
         String selectSql = "SELECT estado FROM recepciones_mercancia WHERE id = ? FOR UPDATE";
-        RecepcionMercancia.EstadoRecepcion estadoAnterior;
+        EstadoRecepcion estadoAnterior;
         
         try (PreparedStatement stmt = conn.prepareStatement(selectSql)) {
             stmt.setLong(1, recepcionId);
@@ -1008,7 +1081,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
                 if (!rs.next()) {
                     throw new DatabaseException("Recepción no encontrada");
                 }
-                estadoAnterior = RecepcionMercancia.EstadoRecepcion.valueOf(rs.getString("estado"));
+                estadoAnterior = EstadoRecepcion.valueOf(rs.getString("estado"));
             }
         }
 
@@ -1111,7 +1184,26 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     }
 }
     
-    
+      @Override
+    public RecepcionMercancia findByNumeroDocumento(String numeroDocumento) throws DatabaseException {
+        String sql = "SELECT * FROM recepciones_mercancia WHERE numero_documento = ?";
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             
+            stmt.setString(1, numeroDocumento);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToRecepcion(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Error al buscar recepción por número de documento: " + e.getMessage(), e);
+        }
+
+        return null; // Devuelve null si no se encuentra ninguna recepción
+    }
     
     
     
@@ -1525,25 +1617,61 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
     
    
 
-    private RecepcionMercancia mapResultSetToRecepcion(ResultSet rs) throws SQLException {
-         RecepcionMercancia recepcion = new RecepcionMercancia();
-    recepcion.setId(rs.getLong("id"));
-    recepcion.setNumeroRecepcion(rs.getString("numero_recepcion"));
-    recepcion.setFechaRecepcion(rs.getTimestamp("fecha_recepcion").toLocalDateTime());
-    recepcion.setProveedor(rs.getString("proveedor_id"));
-    recepcion.setNumeroOrdenCompra(rs.getString("numero_orden_compra"));
-    recepcion.setEstado(EstadoRecepcion.valueOf(rs.getString("estado")));
-    recepcion.setObservaciones(rs.getString("observaciones"));
-    
-    // Guardar también el nombre del proveedor si está disponible
-    String proveedorNombre = rs.getString("proveedor_nombre");
-    if (proveedorNombre != null) {
-        recepcion.setProveedorNombre(proveedorNombre);  // Necesitarás agregar este campo a la clase RecepcionMercancia
-    }
-    
-    return recepcion;
+      private RecepcionMercancia mapResultSetToRecepcion(ResultSet rs) throws SQLException {
+        RecepcionMercancia recepcion = new RecepcionMercancia();
+        recepcion.setId(rs.getLong("id"));
+        recepcion.setNumeroRecepcion(rs.getString("numero_recepcion"));
+        recepcion.setNumeroDocumento(rs.getString("numero_documento"));
+        recepcion.setNumeroOrdenCompra(rs.getString("numero_orden_compra"));
+        recepcion.setNumeroGuiaRemision(rs.getString("numero_guia_remision"));
+        recepcion.setFecha(rs.getTimestamp("fecha").toLocalDateTime());
+        recepcion.setEstado(EstadoRecepcion.valueOf(rs.getString("estado")));
+
+        // Mapear proveedor
+        Proveedor proveedor = new Proveedor();
+        proveedor.setId(rs.getLong("proveedor_id"));
+        proveedor.setRazonSocial(rs.getString("proveedor_nombre"));
+        recepcion.setProveedor(proveedor);
+
+        // Mapear usuario
+        Usuario usuario = new Usuario();
+        usuario.setId(rs.getLong("usuario_id"));
+        usuario.setNombre(rs.getString("usuario_nombre"));
+        recepcion.setUsuario(usuario);
+
+        // Mapear responsable
+        Usuario responsable = new Usuario();
+        responsable.setId(rs.getLong("responsable_id"));
+        responsable.setNombre(rs.getString("responsable_nombre"));
+        recepcion.setResponsable(responsable);
+
+        return recepcion;
     }
 
+     private RecepcionItem mapResultSetToItem(ResultSet rs) throws SQLException {
+        RecepcionItem item = new RecepcionItem();
+        
+        item.setId(rs.getLong("id"));
+        item.setCantidad(rs.getInt("cantidad"));
+        item.setPrecioUnitario(rs.getDouble("precio_unitario"));
+        item.setLote(rs.getString("lote"));
+        
+        Timestamp fechaVenc = rs.getTimestamp("fecha_vencimiento");
+        if (fechaVenc != null) {
+            item.setFechaVencimiento(fechaVenc.toLocalDateTime());
+        }
+        
+        item.setObservaciones(rs.getString("observaciones"));
+
+        // Mapear producto
+        Producto producto = new Producto();
+        producto.setId(rs.getLong("producto_id"));
+        producto.setNombre(rs.getString("producto_nombre"));
+        item.setProducto(producto);
+
+        return item;
+    }
+     
     // Métodos específicos para la gestión de recepciones
     public List<DetalleRecepcion> findDetallesByRecepcionId(Long recepcionId) throws DatabaseException {
         String sql = "SELECT dr.*, " +
@@ -1676,7 +1804,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 }
     
     
-    public List<RecepcionMercancia> findByEstados(List<RecepcionMercancia.EstadoRecepcion> estados) 
+    public List<RecepcionMercancia> findByEstados(List<EstadoRecepcion> estados) 
         throws DatabaseException {
     logger.debug("Buscando recepciones por estados: {}", estados);
     
@@ -1720,7 +1848,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 }
 
     // Método para obtener conteo por estado
-    public Map<RecepcionMercancia.EstadoRecepcion, Integer> getConteosPorEstado() 
+    public Map<EstadoRecepcion, Integer> getConteosPorEstado() 
         throws DatabaseException {
     logger.debug("Obteniendo conteos por estado");
     
@@ -1728,22 +1856,22 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
                 "FROM recepciones_mercancia " +
                 "GROUP BY estado";
 
-    Map<RecepcionMercancia.EstadoRecepcion, Integer> conteos = new EnumMap<>(
-        RecepcionMercancia.EstadoRecepcion.class);
+    Map<EstadoRecepcion, Integer> conteos = new EnumMap<>(
+        EstadoRecepcion.class);
 
     try (Connection conn = DatabaseConfig.getConnection();
          Statement stmt = conn.createStatement();
          ResultSet rs = stmt.executeQuery(sql)) {
 
         while (rs.next()) {
-            RecepcionMercancia.EstadoRecepcion estado = 
-                RecepcionMercancia.EstadoRecepcion.valueOf(rs.getString("estado"));
+            EstadoRecepcion estado = 
+                EstadoRecepcion.valueOf(rs.getString("estado"));
             conteos.put(estado, rs.getInt("conteo"));
         }
 
         // Asegurar que todos los estados tengan un valor
-        for (RecepcionMercancia.EstadoRecepcion estado : 
-             RecepcionMercancia.EstadoRecepcion.values()) {
+        for (EstadoRecepcion estado : 
+             EstadoRecepcion.values()) {
             conteos.putIfAbsent(estado, 0);
         }
 
@@ -1757,7 +1885,7 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
 
     // Método para búsqueda combinada por estado y fechas
     public List<RecepcionMercancia> findByEstadoYFechas(
-        RecepcionMercancia.EstadoRecepcion estado,
+        EstadoRecepcion estado,
         LocalDateTime fechaInicio,
         LocalDateTime fechaFin) throws DatabaseException {
     
@@ -1855,5 +1983,62 @@ public class RecepcionMercanciaDao implements IRecepcionMercanciaDao {
             throw new DatabaseException("Error al eliminar recepción: " + e.getMessage());
         }
     }   
+    
+     /**
+     * Busca recepciones en un rango de fechas
+     */
+    @Override
+    public List<RecepcionMercancia> findByDateRange(LocalDateTime fechaInicio, LocalDateTime fechaFin) throws DatabaseException {
+        String sql = "SELECT * FROM recepciones_mercancia WHERE fecha_recepcion BETWEEN ? AND ?";
+        List<RecepcionMercancia> recepciones = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setTimestamp(1, Timestamp.valueOf(fechaInicio));
+            stmt.setTimestamp(2, Timestamp.valueOf(fechaFin));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RecepcionMercancia recepcion = mapResultSetToRecepcion(rs);
+                    recepciones.add(recepcion);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Error al buscar recepciones por rango de fechas: " + e.getMessage(), e);
+        }
+
+        return recepciones;
+    }
+
+    
+
+    /**
+     * Carga los items de una recepción
+     */
+    private void cargarItems(RecepcionMercancia recepcion) throws SQLException {
+        String sql = "SELECT ri.*, p.nombre as producto_nombre " +
+             "FROM recepcion_item ri " +
+             "INNER JOIN producto p ON ri.producto_id = p.id " +
+             "WHERE ri.recepcion_id = ?";
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, recepcion.getId());
+            
+            List<RecepcionItem> items = new ArrayList<>();
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapResultSetToItem(rs));
+                }
+            }
+            
+            recepcion.setItems(items);
+        }
+    }
+
+    
+    
 
 }

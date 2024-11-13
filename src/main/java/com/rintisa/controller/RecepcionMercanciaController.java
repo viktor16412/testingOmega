@@ -1,5 +1,6 @@
 package com.rintisa.controller;
 
+import com.rintisa.config.DatabaseConfig;
 import com.rintisa.model.RecepcionMercancia;
 import com.rintisa.model.DetalleRecepcion;
 import com.rintisa.model.Producto;
@@ -10,11 +11,19 @@ import com.rintisa.service.interfaces.IProveedorService;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ReportException;
 import com.rintisa.exception.ValidationException;
+
+import com.rintisa.model.Pantalla;
 import com.rintisa.model.Proveedor;
-import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
+
+import com.rintisa.model.EstadoItem;
 import com.rintisa.model.Usuario;
+import com.rintisa.model.enums.EstadoRecepcion;
 import com.rintisa.service.impl.RecepcionMercanciaService;
 import com.rintisa.service.impl.RecepcionReporteService;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +44,8 @@ public class RecepcionMercanciaController {
     public RecepcionMercanciaController(
             
             IRecepcionMercanciaService recepcionService,
-            IProductoService productoService, IProveedorService proveedorService,
+            IProductoService productoService, 
+            IProveedorService proveedorService,
             UsuarioController usuarioController,
             RecepcionReporteService reporteService) {
         
@@ -51,6 +61,8 @@ public class RecepcionMercanciaController {
         this.proveedorService = proveedorService;
         this.usuarioController = usuarioController;
         this.reporteService = reporteService;
+        
+        logger.info("RecepcionMercanciaController inicializado");
     }
     
     
@@ -61,7 +73,7 @@ public class RecepcionMercanciaController {
             // Crear objeto recepción
             RecepcionMercancia recepcion = new RecepcionMercancia();
             recepcion.setNumeroOrdenCompra(numeroOrdenCompra);
-            recepcion.setProveedor(proveedorId);
+            recepcion.setProveedorId(proveedorId);
             
             recepcion.setObservaciones(observaciones);
             recepcion.setResponsable(usuarioController.getUsuarioActual());
@@ -212,7 +224,7 @@ public class RecepcionMercanciaController {
             RecepcionMercancia recepcion = recepcionOpt.get();
 
             // Verificar estado
-            if (recepcion.getEstado() != EstadoRecepcion.VERIFICADO) {
+            if (recepcion.getEstado() != EstadoRecepcion.EN_PROCESO) {
                 throw new ValidationException("estado",
                     "Solo se pueden aceptar recepciones verificadas");
             }
@@ -244,8 +256,8 @@ public class RecepcionMercanciaController {
             RecepcionMercancia recepcion = recepcionOpt.get();
 
             // Verificar estado
-            if (recepcion.getEstado() == EstadoRecepcion.ACEPTADO ||
-                recepcion.getEstado() == EstadoRecepcion.RECHAZADO) {
+            if (recepcion.getEstado() == EstadoRecepcion.PROCESADA ||
+                recepcion.getEstado() == EstadoRecepcion.RECHAZADA) {
                 throw new ValidationException("estado",
                     "No se puede rechazar una recepción que ya está finalizada");
             }
@@ -273,7 +285,8 @@ public class RecepcionMercanciaController {
     public List<RecepcionMercancia> listarRecepciones(
             LocalDateTime fechaInicio, 
             LocalDateTime fechaFin,
-            RecepcionMercancia.EstadoRecepcion estado) {
+            
+            EstadoRecepcion estado) {
         try {
             if (estado != null) {
                 return recepcionService.listarPorEstado(estado);
@@ -365,7 +378,7 @@ public class RecepcionMercanciaController {
             }
 
             // Validar que exista el proveedor
-            Long idProveedor = Long.parseLong(recepcion.getProveedor());
+            Long idProveedor = recepcion.getProveedor().getId();
             Optional<Proveedor> proveedor = proveedorService.buscarPorId(idProveedor);
             if (!proveedor.isPresent()) {
                 throw new ValidationException("proveedorId", "El proveedor seleccionado no existe");
@@ -451,5 +464,39 @@ public class RecepcionMercanciaController {
     }
         }
     
+    //@Override
+    public RecepcionMercancia findByNumeroDocumento(String numeroDocumento) throws DatabaseException {
+    String sql = "SELECT * FROM recepciones_mercancia WHERE numero_documento = ?";
+
+    try (Connection conn = DatabaseConfig.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setString(1, numeroDocumento);
+
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return mapResultSetToRecepcion(rs);
+            }
+        }
+    } catch (SQLException e) {
+        throw new DatabaseException("Error al buscar recepción por número de documento: " + e.getMessage(), e);
+    }
+
+    return null; // Devuelve null si no se encuentra ninguna recepción
+        }
+    
+     // Método auxiliar para mapear ResultSet a RecepcionMercancia
+    private RecepcionMercancia mapResultSetToRecepcion(ResultSet rs) throws SQLException {
+        RecepcionMercancia recepcion = new RecepcionMercancia();
+        recepcion.setId(rs.getLong("id"));
+        recepcion.setNumeroDocumento(rs.getString("numero_documento"));
+        recepcion.setFecha(rs.getTimestamp("fecha_recepcion").toLocalDateTime());
+        // Mapear otros campos según la estructura de la tabla y de la clase
+        return recepcion;
+    }
+
+    
+    
+       
     
 }

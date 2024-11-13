@@ -11,6 +11,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -83,11 +85,11 @@ public class RecepcionReporteService implements IRecepcionReporteService {
                 
                 // Fecha
                 Cell fechaCell = row.createCell(1);
-                fechaCell.setCellValue(recepcion.getFechaRecepcion().format(DATE_FORMATTER));
+                fechaCell.setCellValue(recepcion.getFechaCreacion().format(DATE_FORMATTER));
                 fechaCell.setCellStyle(dateStyle);
                 
                 // Proveedor
-                row.createCell(2).setCellValue(recepcion.getProveedorNombre());
+                row.createCell(2).setCellValue(recepcion.getProveedorId());
                 
                 // Orden Compra
                 row.createCell(3).setCellValue(recepcion.getNumeroOrdenCompra());
@@ -187,5 +189,28 @@ public class RecepcionReporteService implements IRecepcionReporteService {
         style.setFont(font);
         style.setAlignment(HorizontalAlignment.CENTER);
         return style;
+    }
+    
+    /**
+     * Genera un reporte de recepciones en formato Excel
+     */
+    public File generarReporteExcel(LocalDate fechaInicio, LocalDate fechaFin) throws Exception {
+        List<RecepcionMercancia> recepciones = recepcionService.buscarPorRangoFechas(fechaInicio, fechaFin);
+        return generarExcel(recepciones);
+    }
+
+    /**
+     * Genera un reporte de recepciones por proveedor
+     */
+    public File generarReportePorProveedor(Long proveedorId) throws Exception {
+        List<RecepcionMercancia> recepciones = recepcionService.buscarPorProveedor(proveedorId);
+        return generarExcel(recepciones);
+    }
+
+    private File generarExcel(List<RecepcionMercancia> recepciones) throws Exception {
+        // Implementación similar al método generarReporteRecepciones de MainView
+        // pero más específica para el servicio de reportes
+        // ... código de generación de Excel ...
+        return null; // Implementar la generación real del archivo
     }
 }

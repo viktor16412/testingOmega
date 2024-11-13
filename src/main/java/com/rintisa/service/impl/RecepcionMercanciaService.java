@@ -12,14 +12,18 @@ import com.rintisa.model.DetalleRecepcion;
 import com.rintisa.model.Producto;
 import com.rintisa.exception.DatabaseException;
 import com.rintisa.exception.ValidationException;
-import com.rintisa.model.RecepcionMercancia.EstadoRecepcion;
-import com.rintisa.service.interfaces.IRecepcionReporteService;
+
+
+import com.rintisa.model.enums.EstadoRecepcion;
+
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 public class RecepcionMercanciaService implements IRecepcionMercanciaService {
@@ -48,8 +52,8 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
         recepcion.setNumeroRecepcion(recepcionDao.generateNextNumeroRecepcion());
         
         // Establecer estado inicial
-        recepcion.setEstado(RecepcionMercancia.EstadoRecepcion.PENDIENTE);
-        recepcion.setFechaRecepcion(LocalDateTime.now());
+        recepcion.setEstado(EstadoRecepcion.EN_PROCESO);
+        recepcion.setFecha(LocalDateTime.now());
         
         try {
             RecepcionMercancia recepcionCreada = recepcionDao.save(recepcion);
@@ -103,8 +107,8 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
         }
 
         // 4. Actualizar estado de la recepción
-        recepcion.setEstado(EstadoRecepcion.VERIFICADO);
-        recepcion.setFechaVerificacion(LocalDateTime.now());
+        recepcion.setEstado(EstadoRecepcion.EN_PROCESO);
+        recepcion.setFecha(LocalDateTime.now());
         recepcion.setObservaciones(observaciones);
         recepcionDao.update(recepcion);
 
@@ -209,7 +213,7 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
         RecepcionMercancia recepcion = recepcionOpt.get();
         
         // Validar estado
-        if (recepcion.getEstado() != RecepcionMercancia.EstadoRecepcion.VERIFICADO) {
+        if (recepcion.getEstado() != EstadoRecepcion.EN_PROCESO) {
             throw new ValidationException("estado", 
                 "Solo se pueden aceptar recepciones verificadas");
         }
@@ -226,8 +230,8 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
         }
         
         // Actualizar estado
-        recepcion.setEstado(RecepcionMercancia.EstadoRecepcion.ACEPTADO);
-        recepcion.setFechaFinalizacion(LocalDateTime.now());
+        recepcion.setEstado(EstadoRecepcion.APROBADA);
+        recepcion.setFechaModificacion(LocalDateTime.now());
         recepcion.setObservaciones(observaciones);
         
         recepcionDao.update(recepcion);
@@ -249,15 +253,15 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
         RecepcionMercancia recepcion = recepcionOpt.get();
         
         // Validar estado
-        if (recepcion.getEstado() == RecepcionMercancia.EstadoRecepcion.ACEPTADO ||
-            recepcion.getEstado() == RecepcionMercancia.EstadoRecepcion.RECHAZADO) {
+        if (recepcion.getEstado() == EstadoRecepcion.APROBADA ||
+            recepcion.getEstado() == EstadoRecepcion.RECHAZADA) {
             throw new ValidationException("estado", 
                 "No se puede rechazar una recepción ya finalizada");
         }
         
         // Actualizar estado
-        recepcion.setEstado(RecepcionMercancia.EstadoRecepcion.RECHAZADO);
-        recepcion.setFechaFinalizacion(LocalDateTime.now());
+        recepcion.setEstado(EstadoRecepcion.RECHAZADA);
+        recepcion.setFechaModificacion(LocalDateTime.now());
         recepcion.setObservaciones(motivo);
         
         recepcionDao.update(recepcion);
@@ -348,7 +352,7 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
 
     // Implementar otros métodos según necesidades específicas
     @Override
-    public List<RecepcionMercancia> listarPorEstado(RecepcionMercancia.EstadoRecepcion estado) 
+    public List<RecepcionMercancia> listarPorEstado(EstadoRecepcion estado) 
             throws DatabaseException {
         return recepcionDao.findByEstado(estado);
     }
@@ -398,6 +402,33 @@ public class RecepcionMercanciaService implements IRecepcionMercanciaService {
         // Implementar exportación según formato (PDF, Excel)
         throw new UnsupportedOperationException("Método no implementado");
     }
+    
+     @Override
+    public List<RecepcionMercancia> buscarPorRangoFechas(LocalDate fechaInicio, LocalDate fechaFin) 
+            throws DatabaseException {
+        logger.debug("Buscando recepciones entre {} y {}", fechaInicio, fechaFin);
+        // Validar parámetros
+        if (fechaInicio == null || fechaFin == null) {
+            throw new IllegalArgumentException("Las fechas no pueden ser null");
+        }
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new IllegalArgumentException("La fecha inicial no puede ser posterior a la fecha final");
+        }
+        return recepcionDao.findByDateRange(
+                fechaInicio.atStartOfDay(),
+                fechaFin.atTime(LocalTime.MAX)
+        );
+    }
+
+    @Override
+    public List<RecepcionMercancia> buscarPorProveedor(Long proveedorId) throws DatabaseException {
+        logger.debug("Buscando recepciones del proveedor {}", proveedorId);
+        if (proveedorId == null) {
+            throw new IllegalArgumentException("El ID del proveedor no puede ser null");
+        }
+        return recepcionDao.findByProveedor(proveedorId);
+    }
+    
          
     
 }
